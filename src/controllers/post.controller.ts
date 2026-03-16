@@ -184,12 +184,13 @@ export const createPost = async (
       throw forbidden('Unauthorized');
     }
     
-    const { title, content } = req.body;
+    const { title, content, image } = req.body;
     
     const post = await db.post.create({
       title,
       content,
       authorId: req.user.id,
+      image,
     });
     
     res.status(201).json({
@@ -246,7 +247,7 @@ export const updatePost = async (
     }
     
     const { id } = req.params;
-    const { title, content } = req.body;
+    const { title, content, image } = req.body;
     
     // Check if post exists
     const existingPost = await db.post.findById(id);
@@ -260,7 +261,7 @@ export const updatePost = async (
       throw forbidden('Unauthorized to update this post');
     }
     
-    const updatedPost = await db.post.update(id, { title, content });
+    const updatedPost = await db.post.update(id, { title, content, image });
     
     res.json({
       success: true,

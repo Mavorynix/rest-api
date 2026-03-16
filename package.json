@@ -1,7 +1,7 @@
 {
   "name": "rest-api",
-  "version": "2.0.0",
-  "description": "REST API with Node.js, Express, TypeScript - JWT Auth, CRUD, Testing, Swagger, RBAC, Rate Limiting",
+  "version": "3.0.0",
+  "description": "REST API with Node.js, Express, TypeScript - JWT Auth, CRUD, Testing, Swagger, RBAC, Rate Limiting, File Upload, Email Verification, WebSocket",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -15,7 +15,7 @@
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration"
   },
-  "keywords": ["api", "rest", "express", "typescript", "nodejs", "jest", "testing", "swagger", "rbac", "docker"],
+  "keywords": ["api", "rest", "express", "typescript", "nodejs", "jest", "testing", "swagger", "rbac", "docker", "websocket", "email"],
   "author": "Mavorynix",
   "license": "MIT",
   "dependencies": {
@@ -29,7 +29,11 @@
     "uuid": "^13.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
-    "express-rate-limit": "^7.1.5"
+    "express-rate-limit": "^7.1.5",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.8",
+    "socket.io": "^4.7.4",
+    "mime-types": "^2.1.35"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
@@ -42,6 +46,9 @@
     "@types/supertest": "^7.2.0",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",
+    "@types/multer": "^1.4.11",
+    "@types/nodemailer": "^6.4.14",
+    "@types/mime-types": "^2.1.4",
     "typescript": "^5.3.2",
     "tsx": "^4.6.2",
     "jest": "^30.3.0",
