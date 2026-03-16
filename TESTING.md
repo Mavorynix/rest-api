@@ -1,43 +1,43 @@
 # 🧪 Testing Guide
 
-Panduan lengkap untuk testing REST API menggunakan Jest dan Supertest.
+Complete guide for testing REST API using Jest and Supertest.
 
-## 📋 Daftar Isi
+## 📋 Table of Contents
 
-1. [Instalasi Dependencies](#1-instalasi-dependencies)
-2. [Konfigurasi Jest](#2-konfigurasi-jest)
-3. [Struktur Folder Test](#3-struktur-folder-test)
+1. [Install Dependencies](#1-install-dependencies)
+2. [Jest Configuration](#2-jest-configuration)
+3. [Test Folder Structure](#3-test-folder-structure)
 4. [Unit Tests](#4-unit-tests)
 5. [Integration Tests](#5-integration-tests)
-6. [Menjalankan Tests](#6-menjalankan-tests)
+6. [Running Tests](#6-running-tests)
 7. [Code Coverage](#7-code-coverage)
 8. [Best Practices](#8-best-practices)
 
 ---
 
-## 1. Instalasi Dependencies
+## 1. Install Dependencies
 
 ```bash
 # Install testing dependencies
 bun add -d jest @types/jest ts-jest supertest @types/supertest
 
-# Atau menggunakan npm
+# Or using npm
 npm install --save-dev jest @types/jest ts-jest supertest @types/supertest
 ```
 
-### Dependencies yang diinstall:
+### Dependencies Installed:
 
-| Package | Fungsi |
-|---------|--------|
-| `jest` | Test framework utama |
-| `@types/jest` | TypeScript types untuk Jest |
-| `ts-jest` | TypeScript preprocessor untuk Jest |
-| `supertest` | HTTP assertion library untuk testing Express |
-| `@types/supertest` | TypeScript types untuk Supertest |
+| Package | Purpose |
+|---------|---------|
+| `jest` | Main test framework |
+| `@types/jest` | TypeScript types for Jest |
+| `ts-jest` | TypeScript preprocessor for Jest |
+| `supertest` | HTTP assertion library for testing Express |
+| `@types/supertest` | TypeScript types for Supertest |
 
 ---
 
-## 2. Konfigurasi Jest
+## 2. Jest Configuration
 
 ### jest.config.js
 
@@ -77,12 +77,12 @@ module.exports = {
 
 ---
 
-## 3. Struktur Folder Test
+## 3. Test Folder Structure
 
 ```
 src/
 ├── __tests__/
-│   ├── setup.ts                    # Setup & teardown global
+│   ├── setup.ts                    # Global setup & teardown
 │   ├── unit/                       # Unit tests
 │   │   ├── utils/
 │   │   │   └── helpers.test.ts     # Test utility functions
@@ -102,11 +102,11 @@ src/
 
 ## 4. Unit Tests
 
-### Apa itu Unit Test?
+### What is a Unit Test?
 
-Unit test menguji **satu fungsi/komponen** secara terisolasi, tanpa dependency eksternal.
+Unit tests test **one function/component** in isolation, without external dependencies.
 
-### Contoh: Testing Utility Functions
+### Example: Testing Utility Functions
 
 ```typescript
 // src/__tests__/unit/utils/helpers.test.ts
@@ -138,7 +138,7 @@ describe('Utility Functions', () => {
 });
 ```
 
-### Contoh: Testing Validation Schemas
+### Example: Testing Validation Schemas
 
 ```typescript
 // src/__tests__/unit/validation/auth.validation.test.ts
@@ -181,11 +181,11 @@ describe('Validation Schemas', () => {
 
 ## 5. Integration Tests
 
-### Apa itu Integration Test?
+### What is an Integration Test?
 
-Integration test menguji **beberapa komponen bekerja bersama**, termasuk endpoint API, database, dll.
+Integration tests test **multiple components working together**, including API endpoints, database, etc.
 
-### Contoh: Testing Auth Endpoints
+### Example: Testing Auth Endpoints
 
 ```typescript
 // src/__tests__/integration/auth.test.ts
@@ -228,7 +228,7 @@ describe('Auth Endpoints', () => {
 });
 ```
 
-### Contoh: Testing Protected Routes
+### Example: Testing Protected Routes
 
 ```typescript
 // src/__tests__/integration/posts.test.ts
@@ -271,9 +271,9 @@ describe('Post Endpoints', () => {
 
 ---
 
-## 6. Menjalankan Tests
+## 6. Running Tests
 
-### Perintah Dasar
+### Basic Commands
 
 ```bash
 # Run all tests
@@ -298,7 +298,7 @@ bun run test -- auth.test.ts
 bun run test -- --testNamePattern="register"
 ```
 
-### Scripts di package.json
+### Scripts in package.json
 
 ```json
 {
@@ -323,7 +323,7 @@ bun run test -- --testNamePattern="register"
 bun run test:coverage
 ```
 
-### Hasil Coverage
+### Coverage Results
 
 ```
 ----------|---------|----------|---------|---------|-------------------
@@ -335,7 +335,7 @@ All files |   85.71 |    75.00 |   88.89 |   85.71 |
 ----------|---------|----------|---------|---------|-------------------
 ```
 
-### Target Coverage yang Baik
+### Good Coverage Targets
 
 | Metric | Target |
 |--------|--------|
@@ -351,17 +351,17 @@ All files |   85.71 |    75.00 |   88.89 |   85.71 |
 ### ✅ DO
 
 ```typescript
-// ✅ Gunakan descriptive test names
+// ✅ Use descriptive test names
 it('should return 401 when token is missing', async () => {
   // test code
 });
 
-// ✅ Test satu hal per test
+// ✅ Test one thing per test
 it('should validate email format', () => {
   expect(isValidEmail('test@example.com')).toBe(true);
 });
 
-// ✅ Gunakan beforeEach/afterEach untuk setup
+// ✅ Use beforeEach/afterEach for setup
 beforeEach(() => {
   // reset state
 });
@@ -375,15 +375,15 @@ it('should handle empty string', () => {
 ### ❌ DON'T
 
 ```typescript
-// ❌ Jangan test banyak hal sekaligus
+// ❌ Don't test multiple things at once
 it('should work', async () => {
   // testing register, login, AND posts in one test
 });
 
-// ❌ Jangan hardcode values tanpa penjelasan
+// ❌ Don't hardcode values without explanation
 expect(result).toBe('550e8400-e29b-41d4-a716-446655440000');
 
-// ❌ Jangan skip tests
+// ❌ Don't skip tests
 it.skip('should work', () => {});
 ```
 
