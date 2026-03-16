@@ -204,15 +204,4 @@ rest-api/
 | `bun run test:coverage` | Run tests with coverage |
 | `bun run lint` | Lint code |
 
-## 📄 License
 
-MIT License
-
-## 👤 Author
-
-**Mavorynix**
-- GitHub: [@Mavorynix](https://github.com/Mavorynix)
-
----
-
-⭐️ If you like this project, give it a star!
