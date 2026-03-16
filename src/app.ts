@@ -15,7 +15,7 @@ import userRoutes from './routes/user.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { swaggerSpec } from './config/swagger';
 import { apiLimiter } from './config/rateLimit';
-import { corsOptions, devCorsOptions } from './config/cors';
+import { getCorsOptions } from './config/cors';
 
 dotenv.config();
 
@@ -24,12 +24,8 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
-if (process.env.NODE_ENV === 'production') {
-  app.use(cors(corsOptions));
-} else {
-  app.use(cors(devCorsOptions));
-}
+// CORS configuration - uses environment-aware settings
+app.use(cors(getCorsOptions()));
 
 // Body parsing
 app.use(express.json());
