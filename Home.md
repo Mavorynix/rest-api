@@ -1,0 +1,1 @@
+# 🏠 REST API Wiki\n\nWelcome to the REST API Wiki!\n\n## 📚 Pages\n\n- [Getting Started](./Getting-Started)\n- [Authentication](./Authentication)\n- [API Endpoints](./API-Endpoints)\n- [Error Handling](./Error-Handling)\n- [Testing](./Testing)\n\n---\n\nMade with ❤️ by **Mavorynix**
