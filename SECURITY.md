@@ -38,4 +38,4 @@ We use Dependabot to keep dependencies updated automatically.
 
 ---
 
-**Last updated:** March 2024
+**Last updated:** March 2026
