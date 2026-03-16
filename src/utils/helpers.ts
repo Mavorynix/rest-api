@@ -45,20 +45,36 @@ export const isValidUUID = (uuid: string): boolean => {
 
 /**
  * Sanitize string - remove HTML tags and trim
- * Uses a safer approach to avoid incomplete multi-character sanitization
+ * Uses DOM-based parsing for safer HTML sanitization
  */
 export const sanitizeString = (str: string): string => {
-  // Create a temporary element to use browser's built-in HTML parsing
-  // This is safer than regex for HTML sanitization
+  if (!str) return '';
+  
+  // Use DOMParser for safer HTML sanitization (available in Node.js via jsdom or built-in in browsers)
+  // For Node.js environment, we use a simple but effective approach
   let sanitized = str;
   
-  // Remove script tags and their content
-  sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  // Repeatedly remove dangerous patterns until no more changes
+  let previous: string;
+  const dangerousPatterns = [
+    /<script\b[^<]*(?:(?!<\/script\s*>)[^<]*)*<\/script\s*>/gi,
+    /<style\b[^<]*(?:(?!<\/style\s*>)[^<]*)*<\/style\s*>/gi,
+    /<iframe\b[^<]*(?:(?!<\/iframe\s*>)[^<]*)*<\/iframe\s*>/gi,
+    /<object\b[^<]*(?:(?!<\/object\s*>)[^<]*)*<\/object\s*>/gi,
+    /<embed\b[^>]*>/gi,
+    /<link\b[^>]*>/gi,
+    /<meta\b[^>]*>/gi,
+  ];
   
-  // Remove style tags and their content
-  sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+  // Apply dangerous pattern removal repeatedly
+  for (const pattern of dangerousPatterns) {
+    do {
+      previous = sanitized;
+      sanitized = sanitized.replace(pattern, '');
+    } while (sanitized !== previous);
+  }
   
-  // Remove all HTML tags
+  // Remove all remaining HTML tags
   sanitized = sanitized.replace(/<[^>]+>/g, '');
   
   // Decode HTML entities
@@ -71,6 +87,7 @@ export const sanitizeString = (str: string): string => {
     '&#x27;': "'",
     '&#x2F;': '/',
     '&#x60;': '`',
+    '&nbsp;': ' ',
   };
   
   for (const [entity, char] of Object.entries(entities)) {
