@@ -5,9 +5,10 @@
 
 import request from 'supertest';
 import app from '../../app';
+import { resetDb } from '../../models/db';
 
 describe('Post Endpoints', () => {
-  let authToken: string;
+  let accessToken: string;
   let userId: string;
   
   const testUser = {
@@ -21,6 +22,10 @@ describe('Post Endpoints', () => {
     content: 'This is test content for the post.',
   };
 
+  beforeEach(() => {
+    resetDb();
+  });
+
   // ==========================================
   // Setup: Register and Login
   // ==========================================
@@ -30,7 +35,7 @@ describe('Post Endpoints', () => {
       .post('/api/auth/register')
       .send(testUser);
     
-    authToken = registerRes.body.data.token;
+    accessToken = registerRes.body.data.accessToken;
     userId = registerRes.body.data.user.id;
   });
 
@@ -51,7 +56,7 @@ describe('Post Endpoints', () => {
       // Create a post first
       await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send(testPost);
 
       const response = await request(app)
@@ -63,6 +68,24 @@ describe('Post Endpoints', () => {
       expect(response.body.data[0]).toHaveProperty('title');
       expect(response.body.data[0]).toHaveProperty('content');
     });
+
+    it('should support pagination', async () => {
+      // Create multiple posts
+      for (let i = 0; i < 15; i++) {
+        await request(app)
+          .post('/api/posts')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ title: `Post ${i}`, content: `Content ${i}` });
+      }
+
+      const response = await request(app)
+        .get('/api/posts?page=2&limit=5')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.pagination.page).toBe(2);
+      expect(response.body.pagination.limit).toBe(5);
+    });
   });
 
   // ==========================================
@@ -72,7 +95,7 @@ describe('Post Endpoints', () => {
     it('should create a new post with authentication', async () => {
       const response = await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send(testPost)
         .expect(201);
 
@@ -95,7 +118,7 @@ describe('Post Endpoints', () => {
     it('should reject post without title', async () => {
       const response = await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send({ content: 'Some content' })
         .expect(400);
 
@@ -105,7 +128,7 @@ describe('Post Endpoints', () => {
     it('should reject post without content', async () => {
       const response = await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send({ title: 'Some title' })
         .expect(400);
 
@@ -115,7 +138,7 @@ describe('Post Endpoints', () => {
     it('should reject post with empty title', async () => {
       const response = await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send({ title: '', content: 'Some content' })
         .expect(400);
 
@@ -132,7 +155,7 @@ describe('Post Endpoints', () => {
     beforeEach(async () => {
       const response = await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send({
           title: 'Test Post for Get',
           content: 'Content for get test',
@@ -179,7 +202,7 @@ describe('Post Endpoints', () => {
     beforeEach(async () => {
       const response = await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send({
           title: 'Post to Update',
           content: 'Original content',
@@ -196,7 +219,7 @@ describe('Post Endpoints', () => {
 
       const response = await request(app)
         .put(`/api/posts/${postId}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send(updatedData)
         .expect(200);
 
@@ -219,14 +242,14 @@ describe('Post Endpoints', () => {
       
       const response = await request(app)
         .put(`/api/posts/${fakeId}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send({ title: 'New Title', content: 'New content' })
         .expect(404);
 
       expect(response.body.success).toBe(false);
     });
 
-    it('should reject update of another user\'s post', async () => {
+    it('should reject update of another user post', async () => {
       // Create another user
       const otherUser = {
         email: 'other@example.com',
@@ -238,7 +261,7 @@ describe('Post Endpoints', () => {
         .post('/api/auth/register')
         .send(otherUser);
       
-      const otherToken = otherRes.body.data.token;
+      const otherToken = otherRes.body.data.accessToken;
 
       // Try to update first user's post
       const response = await request(app)
@@ -261,7 +284,7 @@ describe('Post Endpoints', () => {
     beforeEach(async () => {
       const response = await request(app)
         .post('/api/posts')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send({
           title: 'Post to Delete',
           content: 'Content to delete',
@@ -273,14 +296,14 @@ describe('Post Endpoints', () => {
     it('should delete own post', async () => {
       const response = await request(app)
         .delete(`/api/posts/${postId}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('deleted');
 
       // Verify post is deleted
-      const getRes = await request(app)
+      await request(app)
         .get(`/api/posts/${postId}`)
         .expect(404);
     });
@@ -298,13 +321,13 @@ describe('Post Endpoints', () => {
       
       const response = await request(app)
         .delete(`/api/posts/${fakeId}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(404);
 
       expect(response.body.success).toBe(false);
     });
 
-    it('should reject delete of another user\'s post', async () => {
+    it('should reject delete of another user post', async () => {
       // Create another user
       const otherUser = {
         email: 'deleter@example.com',
@@ -316,7 +339,7 @@ describe('Post Endpoints', () => {
         .post('/api/auth/register')
         .send(otherUser);
       
-      const otherToken = otherRes.body.data.token;
+      const otherToken = otherRes.body.data.accessToken;
 
       // Try to delete first user's post
       const response = await request(app)

@@ -5,7 +5,7 @@
 
 import request from 'supertest';
 import app from '../../app';
-import { db } from '../../models/db';
+import { resetDb } from '../../models/db';
 
 describe('Auth Endpoints', () => {
   const testUser = {
@@ -13,6 +13,10 @@ describe('Auth Endpoints', () => {
     username: 'testuser',
     password: 'Password123',
   };
+
+  beforeEach(() => {
+    resetDb();
+  });
 
   // ==========================================
   // POST /api/auth/register
@@ -29,7 +33,8 @@ describe('Auth Endpoints', () => {
       expect(response.body.data.user).toHaveProperty('id');
       expect(response.body.data.user.email).toBe(testUser.email);
       expect(response.body.data.user.username).toBe(testUser.username);
-      expect(response.body.data).toHaveProperty('token');
+      expect(response.body.data).toHaveProperty('accessToken');
+      expect(response.body.data).toHaveProperty('refreshToken');
       expect(response.body.data.user).not.toHaveProperty('password');
     });
 
@@ -121,7 +126,8 @@ describe('Auth Endpoints', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.user).toHaveProperty('id');
       expect(response.body.data.user.email).toBe(testUser.email);
-      expect(response.body.data).toHaveProperty('token');
+      expect(response.body.data).toHaveProperty('accessToken');
+      expect(response.body.data).toHaveProperty('refreshToken');
     });
 
     it('should reject invalid password', async () => {
@@ -171,7 +177,7 @@ describe('Auth Endpoints', () => {
         .post('/api/auth/register')
         .send(testUser);
       
-      authToken = response.body.data.token;
+      authToken = response.body.data.accessToken;
     });
 
     it('should return current user with valid token', async () => {
@@ -208,6 +214,49 @@ describe('Auth Endpoints', () => {
       const response = await request(app)
         .get('/api/auth/me')
         .set('Authorization', 'InvalidFormat token')
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  // ==========================================
+  // POST /api/auth/refresh
+  // ==========================================
+  describe('POST /api/auth/refresh', () => {
+    let refreshToken: string;
+
+    beforeEach(async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(testUser);
+      
+      refreshToken = response.body.data.refreshToken;
+    });
+
+    it('should refresh access token with valid refresh token', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .send({ refreshToken })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('accessToken');
+    });
+
+    it('should reject invalid refresh token', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .send({ refreshToken: 'invalid-token' })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject missing refresh token', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .send({})
         .expect(401);
 
       expect(response.body.success).toBe(false);
