@@ -1,16 +1,20 @@
 # 🚀 REST API
 
-A comprehensive REST API built with Node.js, Express, and TypeScript. Features authentication, RBAC, rate limiting, Swagger documentation, and Docker support.
+A comprehensive REST API built with Node.js, Express, and TypeScript. Features authentication, RBAC, rate limiting, Swagger documentation, Docker support, file uploads, email verification, and real-time notifications.
 
 ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=nodedotjs)
 ![Express](https://img.shields.io/badge/Express-4.x-black?style=flat-square&logo=express)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript)
-![Jest](https://img.shields.io/badge/Jest-29-C21325?style=flat-square&logo=jest)
+![Jest](https://img.shields.io/badge/Jest-30-C21325?style=flat-square&logo=jest)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)
+![Socket.io](https://img.shields.io/badge/Socket.io-4.x-black?style=flat-square&logo=socketdotio)
 
 ## ✨ Features
 
 - 🔐 **JWT Authentication** - Access & Refresh tokens
+- ✉️ **Email Verification** - Verify email on registration
+- 📁 **File Upload** - Avatar & post image uploads
+- 🔔 **Real-time Notifications** - WebSocket via Socket.io
 - 👤 **Role-Based Access Control** - Admin & User roles
 - 📚 **Swagger Documentation** - Interactive API docs at `/api-docs`
 - 🛡️ **Security** - Rate limiting, Helmet, CORS
@@ -28,6 +32,9 @@ A comprehensive REST API built with Node.js, Express, and TypeScript. Features a
 | Language | TypeScript |
 | Auth | JWT (Access + Refresh tokens) |
 | Validation | Zod |
+| File Upload | Multer |
+| Email | Nodemailer |
+| Real-time | Socket.io |
 | Testing | Jest + Supertest |
 | Docs | Swagger/OpenAPI |
 | Container | Docker |
@@ -70,11 +77,31 @@ docker-compose up api
 |--------|----------|-------------|------|
 | POST | `/api/auth/register` | Register new user | ❌ |
 | POST | `/api/auth/login` | Login user | ❌ |
+| GET | `/api/auth/verify-email` | Verify email address | ❌ |
+| POST | `/api/auth/resend-verification` | Resend verification email | ❌ |
+| POST | `/api/auth/forgot-password` | Request password reset | ❌ |
+| POST | `/api/auth/reset-password` | Reset password | ❌ |
 | POST | `/api/auth/refresh` | Refresh access token | ❌ |
 | POST | `/api/auth/logout` | Logout user | ✅ |
 | GET | `/api/auth/me` | Get current user | ✅ |
 | PUT | `/api/auth/me` | Update profile | ✅ |
 | DELETE | `/api/auth/me` | Delete account | ✅ |
+
+### Upload
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/upload/avatar` | Upload avatar | ✅ |
+| POST | `/api/upload/post-image` | Upload post image | ✅ |
+| DELETE | `/api/upload/avatar` | Delete avatar | ✅ |
+
+### Notifications
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/notifications` | Get notifications | ✅ |
+| PUT | `/api/notifications/read-all` | Mark all as read | ✅ |
+| PUT | `/api/notifications/:id/read` | Mark as read | ✅ |
+| DELETE | `/api/notifications/:id` | Delete notification | ✅ |
+| POST | `/api/notifications/test` | Send test notification | ✅ |
 
 ### Users (Admin Only)
 | Method | Endpoint | Description | Auth |
@@ -88,10 +115,33 @@ docker-compose up api
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
 | GET | `/api/posts` | Get all posts | ❌ |
+| GET | `/api/posts/user/me` | Get my posts | ✅ |
 | GET | `/api/posts/:id` | Get single post | ❌ |
 | POST | `/api/posts` | Create post | ✅ |
 | PUT | `/api/posts/:id` | Update post | ✅ Owner/Admin |
 | DELETE | `/api/posts/:id` | Delete post | ✅ Owner/Admin |
+
+## 🔌 WebSocket Events
+
+Connect to the WebSocket server at `/socket.io/`
+
+### Authentication
+```javascript
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:3000', {
+  auth: { token: 'your-access-token' }
+});
+```
+
+### Events
+
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `connected` | Server → Client | Connection confirmed |
+| `notification` | Server → Client | New notification received |
+| `mark_read` | Client → Server | Mark notification as read |
+| `marked_read` | Server → Client | Confirmation of read status |
 
 ## 📖 Query Parameters
 
@@ -110,6 +160,7 @@ GET /api/users?sort=username&order=asc
 ```
 GET /api/posts?authorId=uuid
 GET /api/users?role=admin
+GET /api/notifications?unreadOnly=true
 ```
 
 ## 📚 API Documentation
@@ -141,9 +192,25 @@ bun run test:integration
 ## 🔐 Environment Variables
 
 ```env
+# Server
 PORT=3000
 NODE_ENV=development
 JWT_SECRET=your-secret-key-here
+
+# CORS (comma-separated)
+CORS_ORIGIN=http://localhost:3000,http://localhost:5173
+
+# Base URL for email links
+BASE_URL=http://localhost:3000
+
+# Email (SMTP)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+EMAIL_FROM=noreply@example.com
+EMAIL_FROM_NAME=REST API
 ```
 
 ## 🐳 Docker Commands
@@ -169,7 +236,10 @@ rest-api/
 │   ├── config/              # Configuration files
 │   │   ├── cors.ts          # CORS config
 │   │   ├── rateLimit.ts     # Rate limiting
-│   │   └── swagger.ts       # Swagger/OpenAPI
+│   │   ├── swagger.ts       # Swagger/OpenAPI
+│   │   ├── upload.ts        # Multer config
+│   │   ├── email.ts         # Nodemailer config
+│   │   └── socket.ts        # Socket.io config
 │   ├── controllers/         # Request handlers
 │   ├── middleware/          # Express middleware
 │   ├── models/              # Data models
@@ -178,6 +248,9 @@ rest-api/
 │   ├── validation/          # Zod schemas
 │   ├── app.ts               # Express app
 │   └── index.ts             # Entry point
+├── uploads/                 # Uploaded files
+│   ├── avatars/            # User avatars
+│   └── posts/              # Post images
 ├── Dockerfile               # Docker configuration
 ├── docker-compose.yml       # Docker Compose
 ├── jest.config.js           # Jest configuration
@@ -204,4 +277,22 @@ rest-api/
 | `bun run test:coverage` | Run tests with coverage |
 | `bun run lint` | Lint code |
 
+## 📧 Email Templates
 
+The API includes beautiful HTML email templates for:
+- ✉️ **Email Verification** - Sent on registration
+- 🔐 **Password Reset** - Sent on forgot password
+- 🎉 **Welcome Email** - Sent after verification
+
+For development, you can use [Ethereal Email](https://ethereal.email) to test emails.
+
+## 🔒 Security Features
+
+- ✅ JWT Authentication with refresh tokens
+- ✅ Email verification required
+- ✅ Password hashing with bcrypt
+- ✅ Rate limiting on sensitive endpoints
+- ✅ CORS protection
+- ✅ Helmet security headers
+- ✅ Input validation with Zod
+- ✅ Role-based access control

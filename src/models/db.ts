@@ -1,6 +1,6 @@
 /**
  * In-memory database for testing and development
- * Includes User, Post, and RefreshToken models
+ * Includes User, Post, RefreshToken, VerificationToken, and Notification models
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -15,6 +15,8 @@ interface User {
   username: string;
   password: string;
   role: UserRole;
+  avatar?: string; // File upload support
+  isVerified: boolean; // Email verification
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +26,7 @@ interface Post {
   title: string;
   content: string;
   authorId: string;
+  image?: string; // File upload support
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,10 +39,31 @@ interface RefreshToken {
   createdAt: Date;
 }
 
+interface VerificationToken {
+  id: string;
+  token: string;
+  userId: string;
+  type: 'email_verification' | 'password_reset';
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+interface Notification {
+  id: string;
+  userId: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: Date;
+}
+
 // In-memory storage
 const users: Map<string, User> = new Map();
 const posts: Map<string, Post> = new Map();
 const refreshTokens: Map<string, RefreshToken> = new Map();
+const verificationTokens: Map<string, VerificationToken> = new Map();
+const notifications: Map<string, Notification> = new Map();
 const userEmailIndex: Map<string, string> = new Map();
 const userTokenIndex: Map<string, string> = new Map(); // token -> tokenId
 
@@ -48,6 +72,8 @@ export const resetDb = () => {
   users.clear();
   posts.clear();
   refreshTokens.clear();
+  verificationTokens.clear();
+  notifications.clear();
   userEmailIndex.clear();
   userTokenIndex.clear();
 };
@@ -67,6 +93,7 @@ export const db = {
         username: data.username,
         password: hashedPassword,
         role: data.role || 'user',
+        isVerified: false, // Email not verified by default
         createdAt: now,
         updatedAt: now,
       };
@@ -127,7 +154,7 @@ export const db = {
       return { users: usersWithoutPassword, total };
     },
     
-    update: async (id: string, data: Partial<Pick<User, 'username' | 'email' | 'role'>>): Promise<Omit<User, 'password'> | null> => {
+    update: async (id: string, data: Partial<Pick<User, 'username' | 'email' | 'role' | 'avatar' | 'isVerified'>>): Promise<Omit<User, 'password'> | null> => {
       const user = users.get(id);
       if (!user) return null;
       
@@ -139,6 +166,8 @@ export const db = {
       
       if (data.username) user.username = data.username;
       if (data.role) user.role = data.role;
+      if (data.avatar !== undefined) user.avatar = data.avatar;
+      if (data.isVerified !== undefined) user.isVerified = data.isVerified;
       
       user.updatedAt = new Date();
       users.set(id, user);
@@ -166,7 +195,7 @@ export const db = {
   
   // Post methods
   post: {
-    create: async (data: { title: string; content: string; authorId: string }): Promise<Post> => {
+    create: async (data: { title: string; content: string; authorId: string; image?: string }): Promise<Post> => {
       const id = uuidv4();
       const now = new Date();
       
@@ -175,6 +204,7 @@ export const db = {
         title: data.title,
         content: data.content,
         authorId: data.authorId,
+        image: data.image,
         createdAt: now,
         updatedAt: now,
       };
@@ -231,12 +261,13 @@ export const db = {
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     },
     
-    update: async (id: string, data: Partial<Pick<Post, 'title' | 'content'>>): Promise<Post | null> => {
+    update: async (id: string, data: Partial<Pick<Post, 'title' | 'content' | 'image'>>): Promise<Post | null> => {
       const post = posts.get(id);
       if (!post) return null;
       
       if (data.title) post.title = data.title;
       if (data.content) post.content = data.content;
+      if (data.image !== undefined) post.image = data.image;
       post.updatedAt = new Date();
       
       posts.set(id, post);
@@ -317,6 +348,122 @@ export const db = {
       return count;
     },
   },
+  
+  // Verification Token methods (for email verification and password reset)
+  verificationToken: {
+    create: async (userId: string, type: 'email_verification' | 'password_reset', expiresHours: number = 24): Promise<string> => {
+      const id = uuidv4();
+      const token = uuidv4(); // Verification token
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + expiresHours * 60 * 60 * 1000);
+      
+      const verificationToken: VerificationToken = {
+        id,
+        token,
+        userId,
+        type,
+        expiresAt,
+        createdAt: now,
+      };
+      
+      verificationTokens.set(id, verificationToken);
+      return token;
+    },
+    
+    findByToken: async (token: string): Promise<VerificationToken | null> => {
+      for (const vt of verificationTokens.values()) {
+        if (vt.token === token) return vt;
+      }
+      return null;
+    },
+    
+    delete: async (token: string): Promise<boolean> => {
+      for (const [id, vt] of verificationTokens.entries()) {
+        if (vt.token === token) {
+          return verificationTokens.delete(id);
+        }
+      }
+      return false;
+    },
+    
+    deleteByUserId: async (userId: string, type?: 'email_verification' | 'password_reset'): Promise<number> => {
+      let count = 0;
+      for (const [id, vt] of verificationTokens.entries()) {
+        if (vt.userId === userId && (!type || vt.type === type)) {
+          verificationTokens.delete(id);
+          count++;
+        }
+      }
+      return count;
+    },
+  },
+  
+  // Notification methods (for WebSocket)
+  notification: {
+    create: async (data: { userId: string; type: 'info' | 'warning' | 'success' | 'error'; title: string; message: string }): Promise<Notification> => {
+      const id = uuidv4();
+      const now = new Date();
+      
+      const notification: Notification = {
+        id,
+        userId: data.userId,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        isRead: false,
+        createdAt: now,
+      };
+      
+      notifications.set(id, notification);
+      return notification;
+    },
+    
+    findByUserId: async (userId: string, options?: { limit?: number; unreadOnly?: boolean }): Promise<Notification[]> => {
+      let userNotifications = Array.from(notifications.values())
+        .filter(n => n.userId === userId)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      if (options?.unreadOnly) {
+        userNotifications = userNotifications.filter(n => !n.isRead);
+      }
+      
+      if (options?.limit) {
+        userNotifications = userNotifications.slice(0, options.limit);
+      }
+      
+      return userNotifications;
+    },
+    
+    markAsRead: async (id: string): Promise<boolean> => {
+      const notification = notifications.get(id);
+      if (!notification) return false;
+      
+      notification.isRead = true;
+      notifications.set(id, notification);
+      return true;
+    },
+    
+    markAllAsRead: async (userId: string): Promise<number> => {
+      let count = 0;
+      for (const [id, n] of notifications.entries()) {
+        if (n.userId === userId && !n.isRead) {
+          n.isRead = true;
+          notifications.set(id, n);
+          count++;
+        }
+      }
+      return count;
+    },
+    
+    delete: async (id: string): Promise<boolean> => {
+      return notifications.delete(id);
+    },
+    
+    countUnread: async (userId: string): Promise<number> => {
+      return Array.from(notifications.values())
+        .filter(n => n.userId === userId && !n.isRead).length;
+    },
+  },
 };
 
-export type { User, Post, RefreshToken };
+export type { User, Post, RefreshToken, VerificationToken, Notification };
