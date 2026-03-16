@@ -4,6 +4,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import sanitizeHtml from 'sanitize-html';
 
 /**
  * Format bytes to human readable string
@@ -44,40 +45,24 @@ export const isValidUUID = (uuid: string): boolean => {
 };
 
 /**
- * Sanitize string - remove HTML tags and trim
- * Uses DOM-based parsing for safer HTML sanitization
+ * Sanitize string - remove dangerous HTML content
+ * Uses sanitize-html library for robust XSS protection
+ * @see https://github.com/apostrophecms/sanitize-html
  */
 export const sanitizeString = (str: string): string => {
   if (!str) return '';
   
-  // Use DOMParser for safer HTML sanitization (available in Node.js via jsdom or built-in in browsers)
-  // For Node.js environment, we use a simple but effective approach
-  let sanitized = str;
+  // Configure sanitize-html to strip all HTML tags but keep text content
+  // This is safer than regex-based approaches which can be bypassed
+  const sanitized = sanitizeHtml(str, {
+    allowedTags: [],           // Strip all HTML tags
+    allowedAttributes: {},     // No attributes allowed
+    disallowedTagsMode: 'discard',  // Completely remove disallowed tags
+    allowProtocolRelative: false,   // Block protocol-relative URLs
+    enforceHtmlBoundary: false,
+  });
   
-  // Repeatedly remove dangerous patterns until no more changes
-  let previous: string;
-  const dangerousPatterns = [
-    /<script\b[^<]*(?:(?!<\/script\s*>)[^<]*)*<\/script\s*>/gi,
-    /<style\b[^<]*(?:(?!<\/style\s*>)[^<]*)*<\/style\s*>/gi,
-    /<iframe\b[^<]*(?:(?!<\/iframe\s*>)[^<]*)*<\/iframe\s*>/gi,
-    /<object\b[^<]*(?:(?!<\/object\s*>)[^<]*)*<\/object\s*>/gi,
-    /<embed\b[^>]*>/gi,
-    /<link\b[^>]*>/gi,
-    /<meta\b[^>]*>/gi,
-  ];
-  
-  // Apply dangerous pattern removal repeatedly
-  for (const pattern of dangerousPatterns) {
-    do {
-      previous = sanitized;
-      sanitized = sanitized.replace(pattern, '');
-    } while (sanitized !== previous);
-  }
-  
-  // Remove all remaining HTML tags
-  sanitized = sanitized.replace(/<[^>]+>/g, '');
-  
-  // Decode HTML entities
+  // Decode common HTML entities
   const entities: Record<string, string> = {
     '&amp;': '&',
     '&lt;': '<',
@@ -90,11 +75,34 @@ export const sanitizeString = (str: string): string => {
     '&nbsp;': ' ',
   };
   
+  let decoded = sanitized;
   for (const [entity, char] of Object.entries(entities)) {
-    sanitized = sanitized.replace(new RegExp(entity, 'g'), char);
+    decoded = decoded.replace(new RegExp(entity, 'g'), char);
   }
   
-  return sanitized.trim();
+  return decoded.trim();
+};
+
+/**
+ * Sanitize HTML content allowing safe tags
+ * Use this when you need to preserve some HTML formatting
+ */
+export const sanitizeHtmlContent = (str: string): string => {
+  if (!str) return '';
+  
+  return sanitizeHtml(str, {
+    allowedTags: [
+      'p', 'br', 'strong', 'em', 'u', 'i', 'b',
+      'ul', 'ol', 'li', 'a', 'blockquote', 'code', 'pre'
+    ],
+    allowedAttributes: {
+      'a': ['href', 'title', 'target', 'rel'],
+    },
+    transformTags: {
+      'a': sanitizeHtml.simpleTransform('a', { target: '_blank', rel: 'noopener noreferrer' }),
+    },
+    allowProtocolRelative: false,
+  }).trim();
 };
 
 /**
