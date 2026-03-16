@@ -45,9 +45,39 @@ export const isValidUUID = (uuid: string): boolean => {
 
 /**
  * Sanitize string - remove HTML tags and trim
+ * Uses a safer approach to avoid incomplete multi-character sanitization
  */
 export const sanitizeString = (str: string): string => {
-  return str.replace(/<[^>]*>/g, '').trim();
+  // Create a temporary element to use browser's built-in HTML parsing
+  // This is safer than regex for HTML sanitization
+  let sanitized = str;
+  
+  // Remove script tags and their content
+  sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  
+  // Remove style tags and their content
+  sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+  
+  // Remove all HTML tags
+  sanitized = sanitized.replace(/<[^>]+>/g, '');
+  
+  // Decode HTML entities
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&#x27;': "'",
+    '&#x2F;': '/',
+    '&#x60;': '`',
+  };
+  
+  for (const [entity, char] of Object.entries(entities)) {
+    sanitized = sanitized.replace(new RegExp(entity, 'g'), char);
+  }
+  
+  return sanitized.trim();
 };
 
 /**
