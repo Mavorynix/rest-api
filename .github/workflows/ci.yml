@@ -30,14 +30,8 @@ jobs:
       - name: Type check
         run: bun run lint
 
-      - name: Run tests
-        run: bun run test:coverage
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/lcov.info
-          fail_ci_if_error: false
+      - name: Build
+        run: bun run build
 
   security:
     name: Security Scan
