@@ -13,7 +13,7 @@ import {
   buildPaginationMeta,
   removeEmptyFields,
   sleep,
-} from '../../utils/helpers';
+} from '../../../utils/helpers';
 
 describe('Utility Functions', () => {
   
