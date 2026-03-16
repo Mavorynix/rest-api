@@ -10,7 +10,7 @@ import {
   createPostSchema,
   paginationSchema,
   uuidParamSchema,
-} from '../../validation/auth.validation';
+} from '../../../validation/auth.validation';
 
 describe('Validation Schemas', () => {
   
