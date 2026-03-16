@@ -1,6 +1,7 @@
 /**
  * Multer configuration for file uploads
  * Handles avatar and post image uploads
+ * Includes security measures against path traversal attacks
  */
 
 import multer from 'multer';
@@ -19,6 +20,9 @@ const postDir = path.join(uploadDir, 'posts');
   }
 });
 
+// Allowed file extensions
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
 // File filter for images only
 const imageFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -30,15 +34,41 @@ const imageFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFil
   }
 };
 
+// Sanitize filename - remove dangerous characters and validate extension
+const sanitizeFilename = (filename: string): string => {
+  // Get extension and validate
+  const ext = path.extname(filename).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    throw new Error('Invalid file extension');
+  }
+  
+  // Remove any path separators and dangerous characters
+  const baseName = path.basename(filename, ext)
+    .replace(/[^a-zA-Z0-9._-]/g, '_') // Only allow safe characters
+    .substring(0, 100); // Limit length
+  
+  return `${baseName}${ext}`;
+};
+
 // Storage configuration for avatars
 const avatarStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, avatarDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    const ext = path.extname(file.originalname);
-    cb(null, `avatar-${uniqueSuffix}${ext}`);
+    try {
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+      const ext = path.extname(file.originalname).toLowerCase();
+      
+      // Validate extension
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        return cb(new Error('Invalid file extension'), '');
+      }
+      
+      cb(null, `avatar-${uniqueSuffix}${ext}`);
+    } catch (error) {
+      cb(error as Error, '');
+    }
   },
 });
 
@@ -48,9 +78,19 @@ const postStorage = multer.diskStorage({
     cb(null, postDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    const ext = path.extname(file.originalname);
-    cb(null, `post-${uniqueSuffix}${ext}`);
+    try {
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+      const ext = path.extname(file.originalname).toLowerCase();
+      
+      // Validate extension
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        return cb(new Error('Invalid file extension'), '');
+      }
+      
+      cb(null, `post-${uniqueSuffix}${ext}`);
+    } catch (error) {
+      cb(error as Error, '');
+    }
   },
 });
 
@@ -72,23 +112,47 @@ export const uploadPostImage = multer({
   fileFilter: imageFilter,
 });
 
-// Get file URL
-export const getFileUrl = (filename: string, type: 'avatar' | 'post'): string => {
-  return `/uploads/${type === 'avatar' ? 'avatars' : 'posts'}/${filename}`;
+// Validate that a path is within the allowed directory (prevents path traversal)
+const isPathWithinAllowedDir = (filePath: string, allowedDir: string): boolean => {
+  // Resolve both paths to absolute paths
+  const resolvedPath = path.resolve(filePath);
+  const resolvedAllowedDir = path.resolve(allowedDir);
+  
+  // Check if the resolved path starts with the allowed directory
+  return resolvedPath.startsWith(resolvedAllowedDir + path.sep) || 
+         resolvedPath === resolvedAllowedDir;
 };
 
-// Delete file
+// Get file URL
+export const getFileUrl = (filename: string, type: 'avatar' | 'post'): string => {
+  // Sanitize the filename before using it
+  const sanitized = sanitizeFilename(filename);
+  return `/uploads/${type === 'avatar' ? 'avatars' : 'posts'}/${sanitized}`;
+};
+
+// Delete file - with security validation
 export const deleteFile = (filename: string, type: 'avatar' | 'post'): boolean => {
   try {
-    const dir = type === 'avatar' ? avatarDir : postDir;
-    const filePath = path.join(dir, filename);
+    // Sanitize the filename first
+    const sanitizedFilename = sanitizeFilename(filename);
     
+    const dir = type === 'avatar' ? avatarDir : postDir;
+    const filePath = path.join(dir, sanitizedFilename);
+    
+    // Security check: verify the path is within the allowed directory
+    if (!isPathWithinAllowedDir(filePath, dir)) {
+      console.error('Path traversal attempt detected:', filename);
+      return false;
+    }
+    
+    // Check if file exists and delete
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
       return true;
     }
     return false;
-  } catch {
+  } catch (error) {
+    console.error('Error deleting file:', error);
     return false;
   }
 };

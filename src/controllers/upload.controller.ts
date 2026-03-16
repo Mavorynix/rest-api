@@ -1,6 +1,6 @@
 /**
  * Upload Controller
- * Handles file upload endpoints
+ * Handles file upload endpoints with security measures
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -71,14 +71,15 @@ export const uploadAvatarHandler = [
       // Get current user to check if they have an existing avatar
       const user = await db.user.findById(req.user.id);
       if (user?.avatar) {
-        // Delete old avatar
-        const oldFilename = user.avatar.split('/').pop();
+        // Delete old avatar - extract filename from URL safely
+        const urlParts = user.avatar.split('/');
+        const oldFilename = urlParts[urlParts.length - 1];
         if (oldFilename) {
           deleteFile(oldFilename, 'avatar');
         }
       }
 
-      // Save avatar URL to user
+      // Save avatar URL to user - file.filename is already sanitized by multer config
       const avatarUrl = getFileUrl(file.filename, 'avatar');
       await db.user.update(req.user.id, { avatar: avatarUrl });
 
@@ -94,7 +95,7 @@ export const uploadAvatarHandler = [
       res.json({
         success: true,
         data: {
-          avatar: file.filename,
+          filename: file.filename,
           avatarUrl,
         },
       });
@@ -158,6 +159,7 @@ export const uploadPostImageHandler = [
         throw badRequest('No file uploaded');
       }
 
+      // file.filename is already sanitized by multer config
       const imageUrl = getFileUrl(file.filename, 'post');
 
       res.json({
@@ -199,7 +201,9 @@ export const deleteAvatarHandler = async (
 
     const user = await db.user.findById(req.user.id);
     if (user?.avatar) {
-      const filename = user.avatar.split('/').pop();
+      // Extract filename from URL safely
+      const urlParts = user.avatar.split('/');
+      const filename = urlParts[urlParts.length - 1];
       if (filename) {
         deleteFile(filename, 'avatar');
       }
