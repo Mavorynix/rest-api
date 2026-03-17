@@ -19,6 +19,10 @@ import uploadRoutes from './routes/upload.routes';
 import notificationRoutes from './routes/notification.routes';
 import commentRoutes from './routes/comment.routes';
 import likeRoutes from './routes/like.routes';
+import passwordRoutes from './routes/password.routes';
+import tagRoutes from './routes/tag.routes';
+import activityRoutes from './routes/activity.routes';
+import analyticsRoutes from './routes/analytics.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { swaggerSpec } from './config/swagger';
 import { apiLimiter } from './config/rateLimit';
@@ -70,7 +74,7 @@ app.get('/api-docs.json', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     message: '🚀 REST API is running!',
-    version: '4.0.0',
+    version: '5.0.0',
     documentation: '/api-docs',
     features: {
       auth: '/api/auth',
@@ -80,6 +84,9 @@ app.get('/', (req, res) => {
       likes: '/api/posts/:postId/like',
       upload: '/api/upload',
       notifications: '/api/notifications',
+      tags: '/api/tags',
+      activity: '/api/activity',
+      analytics: '/api/analytics',
       websocket: '/socket.io',
     },
   });
@@ -96,6 +103,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', passwordRoutes); // Password routes under /api/auth
 app.use('/api/posts', postRoutes);
 app.use('/api/posts/:postId/comments', commentRoutes);
 app.use('/api/posts/:postId/like', likeRoutes);
@@ -104,6 +112,9 @@ app.use('/api/comments/:commentId/like', likeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/tags', tagRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // 404 Handler
 app.use((req, res) => {

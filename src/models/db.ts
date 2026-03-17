@@ -1,6 +1,6 @@
 /**
  * In-memory database for testing and development
- * Includes User, Post, Comment, Like, RefreshToken, VerificationToken, and Notification models
+ * Includes User, Post, Comment, Like, RefreshToken, VerificationToken, Notification, Tag, PostTag, Activity, and Follow models
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -81,6 +81,38 @@ interface Notification {
   createdAt: Date;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface PostTag {
+  id: string;
+  postId: string;
+  tagId: string;
+  createdAt: Date;
+}
+
+interface Activity {
+  id: string;
+  type: 'post' | 'like' | 'comment' | 'follow';
+  userId: string;
+  targetId: string;
+  targetType: 'post' | 'comment' | 'user';
+  data?: Record<string, unknown>;
+  createdAt: Date;
+}
+
+interface Follow {
+  id: string;
+  followerId: string;
+  followingId: string;
+  createdAt: Date;
+}
+
 // In-memory storage
 const users: Map<string, User> = new Map();
 const posts: Map<string, Post> = new Map();
@@ -89,6 +121,10 @@ const likes: Map<string, Like> = new Map();
 const refreshTokens: Map<string, RefreshToken> = new Map();
 const verificationTokens: Map<string, VerificationToken> = new Map();
 const notifications: Map<string, Notification> = new Map();
+const tags: Map<string, Tag> = new Map();
+const postTags: Map<string, PostTag> = new Map();
+const activities: Map<string, Activity> = new Map();
+const follows: Map<string, Follow> = new Map();
 
 // Indexes for faster lookups
 const userEmailIndex: Map<string, string> = new Map();
@@ -96,6 +132,12 @@ const userTokenIndex: Map<string, string> = new Map();
 const postLikesIndex: Map<string, Set<string>> = new Map(); // postId -> set of likeIds
 const commentLikesIndex: Map<string, Set<string>> = new Map(); // commentId -> set of likeIds
 const postCommentsIndex: Map<string, Set<string>> = new Map(); // postId -> set of commentIds
+const tagNameIndex: Map<string, string> = new Map(); // tagName -> tagId
+const postTagsIndex: Map<string, Set<string>> = new Map(); // postId -> set of postTagIds
+const tagPostsIndex: Map<string, Set<string>> = new Map(); // tagId -> set of postTagIds
+const userFollowersIndex: Map<string, Set<string>> = new Map(); // userId -> set of followerIds
+const userFollowingIndex: Map<string, Set<string>> = new Map(); // userId -> set of followingIds
+const userActivitiesIndex: Map<string, Set<string>> = new Map(); // userId -> set of activityIds
 
 // Reset database (for testing)
 export const resetDb = () => {
@@ -106,11 +148,21 @@ export const resetDb = () => {
   refreshTokens.clear();
   verificationTokens.clear();
   notifications.clear();
+  tags.clear();
+  postTags.clear();
+  activities.clear();
+  follows.clear();
   userEmailIndex.clear();
   userTokenIndex.clear();
   postLikesIndex.clear();
   commentLikesIndex.clear();
   postCommentsIndex.clear();
+  tagNameIndex.clear();
+  postTagsIndex.clear();
+  tagPostsIndex.clear();
+  userFollowersIndex.clear();
+  userFollowingIndex.clear();
+  userActivitiesIndex.clear();
 };
 
 // Database operations
@@ -258,6 +310,55 @@ export const db = {
     
     count: async (): Promise<number> => {
       return users.size;
+    },
+    
+    countVerified: async (): Promise<number> => {
+      return Array.from(users.values()).filter(u => u.isVerified).length;
+    },
+    
+    countRecent: async (days: number): Promise<number> => {
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      return Array.from(users.values()).filter(u => u.createdAt >= cutoff).length;
+    },
+    
+    findManyWithStats: async (options?: { 
+      limit?: number; 
+      offset?: number;
+      sortBy?: string;
+    }): Promise<{ users: Array<Omit<User, 'password'> & { postsCount: number; commentsCount: number; likesCount: number }>; total: number }> => {
+      const sortBy = options?.sortBy || 'recent';
+      
+      const allUsers = Array.from(users.values()).map(user => {
+        const userPosts = Array.from(posts.values()).filter(p => p.authorId === user.id);
+        const userComments = Array.from(comments.values()).filter(c => c.userId === user.id);
+        const userLikes = Array.from(likes.values()).filter(l => l.userId === user.id);
+        
+        const { password: _, ...userWithoutPassword } = user;
+        return {
+          ...userWithoutPassword,
+          postsCount: userPosts.length,
+          commentsCount: userComments.length,
+          likesCount: userLikes.length,
+        };
+      });
+      
+      // Sort
+      if (sortBy === 'posts') {
+        allUsers.sort((a, b) => b.postsCount - a.postsCount);
+      } else if (sortBy === 'active') {
+        allUsers.sort((a, b) => (b.postsCount + b.commentsCount + b.likesCount) - (a.postsCount + a.commentsCount + a.likesCount));
+      } else {
+        allUsers.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      }
+      
+      const total = allUsers.length;
+      
+      // Pagination
+      const offset = options?.offset || 0;
+      const limit = options?.limit || allUsers.length;
+      const paginatedUsers = allUsers.slice(offset, offset + limit);
+      
+      return { users: paginatedUsers, total };
     },
   },
   
@@ -416,6 +517,45 @@ export const db = {
         posts.set(id, post);
       }
     },
+    
+    countRecent: async (days: number): Promise<number> => {
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      return Array.from(posts.values()).filter(p => p.createdAt >= cutoff).length;
+    },
+    
+    findManyWithStats: async (options?: { 
+      limit?: number; 
+      offset?: number;
+      sortBy?: string;
+    }): Promise<{ posts: Array<Post & { author: { id: string; username: string; email: string } | null }>; total: number }> => {
+      const sortBy = options?.sortBy || 'recent';
+      
+      const allPosts = Array.from(posts.values()).map(post => {
+        const author = users.get(post.authorId);
+        return {
+          ...post,
+          author: author ? { id: author.id, username: author.username, email: author.email } : null,
+        };
+      });
+      
+      // Sort
+      if (sortBy === 'likes') {
+        allPosts.sort((a, b) => b.likesCount - a.likesCount);
+      } else if (sortBy === 'comments') {
+        allPosts.sort((a, b) => b.commentsCount - a.commentsCount);
+      } else {
+        allPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      }
+      
+      const total = allPosts.length;
+      
+      // Pagination
+      const offset = options?.offset || 0;
+      const limit = options?.limit || allPosts.length;
+      const paginatedPosts = allPosts.slice(offset, offset + limit);
+      
+      return { posts: paginatedPosts, total };
+    },
   },
   
   // Comment methods
@@ -566,6 +706,10 @@ export const db = {
         comments.set(id, comment);
       }
     },
+    
+    count: async (): Promise<number> => {
+      return comments.size;
+    },
   },
   
   // Like methods
@@ -649,6 +793,10 @@ export const db = {
     countByTarget: async (targetType: 'post' | 'comment', targetId: string): Promise<number> => {
       return Array.from(likes.values())
         .filter(l => l.targetType === targetType && l.targetId === targetId).length;
+    },
+    
+    count: async (): Promise<number> => {
+      return likes.size;
     },
   },
   
@@ -840,6 +988,520 @@ export const db = {
         .filter(n => n.userId === userId && !n.isRead).length;
     },
   },
+  
+  // Tag methods
+  tag: {
+    create: async (data: { name: string; description?: string }): Promise<Tag> => {
+      const id = uuidv4();
+      const now = new Date();
+      
+      const tag: Tag = {
+        id,
+        name: data.name.toLowerCase().trim(),
+        description: data.description,
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      tags.set(id, tag);
+      tagNameIndex.set(tag.name, id);
+      tagPostsIndex.set(id, new Set());
+      
+      return tag;
+    },
+    
+    findById: async (id: string): Promise<Tag | null> => {
+      return tags.get(id) || null;
+    },
+    
+    findByName: async (name: string): Promise<Tag | null> => {
+      const tagId = tagNameIndex.get(name.toLowerCase().trim());
+      if (!tagId) return null;
+      return tags.get(tagId) || null;
+    },
+    
+    findMany: async (options?: { 
+      limit?: number; 
+      offset?: number;
+      search?: string;
+    }): Promise<{ tags: Array<Tag & { postsCount: number }>; total: number }> => {
+      let allTags = Array.from(tags.values()).map(tag => {
+        const postTagIds = tagPostsIndex.get(tag.id) || new Set();
+        return {
+          ...tag,
+          postsCount: postTagIds.size,
+        };
+      });
+      
+      // Search
+      if (options?.search) {
+        const searchLower = options.search.toLowerCase();
+        allTags = allTags.filter(t => t.name.includes(searchLower));
+      }
+      
+      // Sort by posts count (most popular first)
+      allTags.sort((a, b) => b.postsCount - a.postsCount);
+      
+      const total = allTags.length;
+      
+      // Pagination
+      const offset = options?.offset || 0;
+      const limit = options?.limit || allTags.length;
+      const paginatedTags = allTags.slice(offset, offset + limit);
+      
+      return { tags: paginatedTags, total };
+    },
+    
+    update: async (id: string, data: { name?: string; description?: string }): Promise<Tag | null> => {
+      const tag = tags.get(id);
+      if (!tag) return null;
+      
+      if (data.name) {
+        tagNameIndex.delete(tag.name);
+        tag.name = data.name.toLowerCase().trim();
+        tagNameIndex.set(tag.name, id);
+      }
+      if (data.description !== undefined) {
+        tag.description = data.description;
+      }
+      
+      tag.updatedAt = new Date();
+      tags.set(id, tag);
+      
+      return tag;
+    },
+    
+    delete: async (id: string): Promise<boolean> => {
+      const tag = tags.get(id);
+      if (!tag) return false;
+      
+      // Delete all post-tag associations
+      const postTagIds = tagPostsIndex.get(id);
+      if (postTagIds) {
+        for (const ptId of postTagIds) {
+          const pt = postTags.get(ptId);
+          if (pt) {
+            const postTagsSet = postTagsIndex.get(pt.postId);
+            if (postTagsSet) {
+              postTagsSet.delete(ptId);
+            }
+          }
+          postTags.delete(ptId);
+        }
+      }
+      
+      tagNameIndex.delete(tag.name);
+      tagPostsIndex.delete(id);
+      
+      return tags.delete(id);
+    },
+    
+    getPosts: async (tagId: string, options?: { limit?: number; offset?: number }): Promise<{ posts: Post[]; total: number }> => {
+      const postTagIds = tagPostsIndex.get(tagId) || new Set();
+      
+      const taggedPosts: Post[] = [];
+      for (const ptId of postTagIds) {
+        const pt = postTags.get(ptId);
+        if (pt) {
+          const post = posts.get(pt.postId);
+          if (post) {
+            taggedPosts.push(post);
+          }
+        }
+      }
+      
+      // Sort by creation date
+      taggedPosts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      const total = taggedPosts.length;
+      
+      // Pagination
+      const offset = options?.offset || 0;
+      const limit = options?.limit || taggedPosts.length;
+      const paginatedPosts = taggedPosts.slice(offset, offset + limit);
+      
+      return { posts: paginatedPosts, total };
+    },
+    
+    findPopular: async (limit: number = 20): Promise<Array<Tag & { postsCount: number }>> => {
+      const allTags = Array.from(tags.values()).map(tag => {
+        const postTagIds = tagPostsIndex.get(tag.id) || new Set();
+        return {
+          ...tag,
+          postsCount: postTagIds.size,
+        };
+      });
+      
+      allTags.sort((a, b) => b.postsCount - a.postsCount);
+      
+      return allTags.slice(0, limit);
+    },
+  },
+  
+  // PostTag methods (many-to-many)
+  postTag: {
+    create: async (data: { postId: string; tagId: string }): Promise<PostTag | null> => {
+      // Check if association already exists
+      for (const pt of postTags.values()) {
+        if (pt.postId === data.postId && pt.tagId === data.tagId) {
+          return null;
+        }
+      }
+      
+      const id = uuidv4();
+      const now = new Date();
+      
+      const postTag: PostTag = {
+        id,
+        postId: data.postId,
+        tagId: data.tagId,
+        createdAt: now,
+      };
+      
+      postTags.set(id, postTag);
+      
+      // Update indexes
+      const postTagsSet = postTagsIndex.get(data.postId);
+      if (postTagsSet) {
+        postTagsSet.add(id);
+      } else {
+        postTagsIndex.set(data.postId, new Set([id]));
+      }
+      
+      const tagPostsSet = tagPostsIndex.get(data.tagId);
+      if (tagPostsSet) {
+        tagPostsSet.add(id);
+      }
+      
+      return postTag;
+    },
+    
+    findByPostId: async (postId: string): Promise<Array<PostTag & { tag: Tag }>> => {
+      const postTagIds = postTagsIndex.get(postId) || new Set();
+      const result: Array<PostTag & { tag: Tag }> = [];
+      
+      for (const ptId of postTagIds) {
+        const pt = postTags.get(ptId);
+        if (pt) {
+          const tag = tags.get(pt.tagId);
+          if (tag) {
+            result.push({ ...pt, tag });
+          }
+        }
+      }
+      
+      return result;
+    },
+    
+    delete: async (postId: string, tagId: string): Promise<boolean> => {
+      for (const [id, pt] of postTags.entries()) {
+        if (pt.postId === postId && pt.tagId === tagId) {
+          // Update indexes
+          const postTagsSet = postTagsIndex.get(postId);
+          if (postTagsSet) {
+            postTagsSet.delete(id);
+          }
+          
+          const tagPostsSet = tagPostsIndex.get(tagId);
+          if (tagPostsSet) {
+            tagPostsSet.delete(id);
+          }
+          
+          return postTags.delete(id);
+        }
+      }
+      return false;
+    },
+    
+    deleteByPostId: async (postId: string): Promise<number> => {
+      const postTagIds = postTagsIndex.get(postId) || new Set();
+      let count = 0;
+      
+      for (const ptId of postTagIds) {
+        const pt = postTags.get(ptId);
+        if (pt) {
+          const tagPostsSet = tagPostsIndex.get(pt.tagId);
+          if (tagPostsSet) {
+            tagPostsSet.delete(ptId);
+          }
+          postTags.delete(ptId);
+          count++;
+        }
+      }
+      
+      postTagsIndex.delete(postId);
+      return count;
+    },
+  },
+  
+  // Activity methods
+  activity: {
+    create: async (data: { 
+      type: 'post' | 'like' | 'comment' | 'follow';
+      userId: string;
+      targetId: string;
+      targetType: 'post' | 'comment' | 'user';
+      activityData?: Record<string, unknown>;
+    }): Promise<Activity> => {
+      const id = uuidv4();
+      const now = new Date();
+      
+      const activity: Activity = {
+        id,
+        type: data.type,
+        userId: data.userId,
+        targetId: data.targetId,
+        targetType: data.targetType,
+        data: data.activityData,
+        createdAt: now,
+      };
+      
+      activities.set(id, activity);
+      
+      // Update user activities index
+      const userActivitiesSet = userActivitiesIndex.get(data.userId);
+      if (userActivitiesSet) {
+        userActivitiesSet.add(id);
+      } else {
+        userActivitiesIndex.set(data.userId, new Set([id]));
+      }
+      
+      return activity;
+    },
+    
+    getFeed: async (userId: string, options?: { limit?: number; offset?: number }): Promise<{ activities: Array<Activity & { user?: { id: string; username: string }; target?: unknown }>; total: number }> => {
+      // Get users that this user follows
+      const followingIds = userFollowingIndex.get(userId) || new Set();
+      
+      // Include user's own activity
+      followingIds.add(userId);
+      
+      const allActivities: Array<Activity & { user?: { id: string; username: string }; target?: unknown }> = [];
+      
+      for (const act of activities.values()) {
+        if (followingIds.has(act.userId)) {
+          const user = users.get(act.userId);
+          let target: unknown = null;
+          
+          if (act.targetType === 'post') {
+            target = posts.get(act.targetId);
+          } else if (act.targetType === 'comment') {
+            target = comments.get(act.targetId);
+          } else if (act.targetType === 'user') {
+            const targetUser = users.get(act.targetId);
+            if (targetUser) {
+              const { password: _, ...userWithoutPassword } = targetUser;
+              target = userWithoutPassword;
+            }
+          }
+          
+          allActivities.push({
+            ...act,
+            user: user ? { id: user.id, username: user.username } : undefined,
+            target,
+          });
+        }
+      }
+      
+      // Sort by creation date (newest first)
+      allActivities.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      const total = allActivities.length;
+      
+      // Pagination
+      const offset = options?.offset || 0;
+      const limit = options?.limit || allActivities.length;
+      const paginatedActivities = allActivities.slice(offset, offset + limit);
+      
+      return { activities: paginatedActivities, total };
+    },
+    
+    getTrending: async (limit: number, timeframe: string): Promise<Array<Post & { score: number }>> => {
+      // Calculate time cutoff
+      let cutoffDays = 7;
+      if (timeframe === 'day') cutoffDays = 1;
+      else if (timeframe === 'month') cutoffDays = 30;
+      
+      const cutoff = new Date(Date.now() - cutoffDays * 24 * 60 * 60 * 1000);
+      
+      // Filter posts within timeframe and calculate score
+      const trendingPosts = Array.from(posts.values())
+        .filter(p => p.createdAt >= cutoff)
+        .map(post => ({
+          ...post,
+          score: post.likesCount * 3 + post.commentsCount * 2,
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit);
+      
+      return trendingPosts;
+    },
+    
+    getRecent: async (userId: string, limit: number): Promise<Array<Activity & { user?: { id: string; username: string }; target?: unknown }>> => {
+      const userActivitiesSet = userActivitiesIndex.get(userId) || new Set();
+      
+      const userActivities: Array<Activity & { user?: { id: string; username: string }; target?: unknown }> = [];
+      
+      for (const actId of userActivitiesSet) {
+        const act = activities.get(actId);
+        if (act) {
+          const user = users.get(act.userId);
+          let target: unknown = null;
+          
+          if (act.targetType === 'post') {
+            target = posts.get(act.targetId);
+          } else if (act.targetType === 'comment') {
+            target = comments.get(act.targetId);
+          }
+          
+          userActivities.push({
+            ...act,
+            user: user ? { id: user.id, username: user.username } : undefined,
+            target,
+          });
+        }
+      }
+      
+      // Sort by creation date (newest first)
+      userActivities.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      return userActivities.slice(0, limit);
+    },
+  },
+  
+  // Follow methods
+  follow: {
+    create: async (data: { followerId: string; followingId: string }): Promise<Follow | null> => {
+      // Check if already following
+      const existing = await db.follow.isFollowing(data.followerId, data.followingId);
+      if (existing) return null;
+      
+      // Can't follow yourself
+      if (data.followerId === data.followingId) return null;
+      
+      const id = uuidv4();
+      const now = new Date();
+      
+      const follow: Follow = {
+        id,
+        followerId: data.followerId,
+        followingId: data.followingId,
+        createdAt: now,
+      };
+      
+      follows.set(id, follow);
+      
+      // Update indexes
+      const followersSet = userFollowersIndex.get(data.followingId);
+      if (followersSet) {
+        followersSet.add(data.followerId);
+      } else {
+        userFollowersIndex.set(data.followingId, new Set([data.followerId]));
+      }
+      
+      const followingSet = userFollowingIndex.get(data.followerId);
+      if (followingSet) {
+        followingSet.add(data.followingId);
+      } else {
+        userFollowingIndex.set(data.followerId, new Set([data.followingId]));
+      }
+      
+      // Create activity
+      await db.activity.create({
+        type: 'follow',
+        userId: data.followerId,
+        targetId: data.followingId,
+        targetType: 'user',
+      });
+      
+      return follow;
+    },
+    
+    isFollowing: async (followerId: string, followingId: string): Promise<boolean> => {
+      const followingSet = userFollowingIndex.get(followerId);
+      return followingSet ? followingSet.has(followingId) : false;
+    },
+    
+    delete: async (followerId: string, followingId: string): Promise<boolean> => {
+      for (const [id, f] of follows.entries()) {
+        if (f.followerId === followerId && f.followingId === followingId) {
+          // Update indexes
+          const followersSet = userFollowersIndex.get(followingId);
+          if (followersSet) {
+            followersSet.delete(followerId);
+          }
+          
+          const followingSet = userFollowingIndex.get(followerId);
+          if (followingSet) {
+            followingSet.delete(followingId);
+          }
+          
+          return follows.delete(id);
+        }
+      }
+      return false;
+    },
+    
+    getFollowers: async (userId: string, options?: { limit?: number; offset?: number }): Promise<{ followers: Array<Omit<User, 'password'>>; total: number }> => {
+      const followersSet = userFollowersIndex.get(userId) || new Set();
+      
+      const followersList: Array<Omit<User, 'password'>> = [];
+      for (const followerId of followersSet) {
+        const user = users.get(followerId);
+        if (user) {
+          const { password: _, ...userWithoutPassword } = user;
+          followersList.push(userWithoutPassword);
+        }
+      }
+      
+      // Sort by username
+      followersList.sort((a, b) => a.username.localeCompare(b.username));
+      
+      const total = followersList.length;
+      
+      // Pagination
+      const offset = options?.offset || 0;
+      const limit = options?.limit || followersList.length;
+      const paginatedFollowers = followersList.slice(offset, offset + limit);
+      
+      return { followers: paginatedFollowers, total };
+    },
+    
+    getFollowing: async (userId: string, options?: { limit?: number; offset?: number }): Promise<{ following: Array<Omit<User, 'password'>>; total: number }> => {
+      const followingSet = userFollowingIndex.get(userId) || new Set();
+      
+      const followingList: Array<Omit<User, 'password'>> = [];
+      for (const followingId of followingSet) {
+        const user = users.get(followingId);
+        if (user) {
+          const { password: _, ...userWithoutPassword } = user;
+          followingList.push(userWithoutPassword);
+        }
+      }
+      
+      // Sort by username
+      followingList.sort((a, b) => a.username.localeCompare(b.username));
+      
+      const total = followingList.length;
+      
+      // Pagination
+      const offset = options?.offset || 0;
+      const limit = options?.limit || followingList.length;
+      const paginatedFollowing = followingList.slice(offset, offset + limit);
+      
+      return { following: paginatedFollowing, total };
+    },
+    
+    countFollowers: async (userId: string): Promise<number> => {
+      const followersSet = userFollowersIndex.get(userId);
+      return followersSet ? followersSet.size : 0;
+    },
+    
+    countFollowing: async (userId: string): Promise<number> => {
+      const followingSet = userFollowingIndex.get(userId);
+      return followingSet ? followingSet.size : 0;
+    },
+  },
 };
 
-export type { User, Post, Comment, Like, RefreshToken, VerificationToken, Notification };
+export type { User, Post, Comment, Like, RefreshToken, VerificationToken, Notification, Tag, PostTag, Activity, Follow };
