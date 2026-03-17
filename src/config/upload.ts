@@ -100,7 +100,7 @@ export const uploadAvatar = multer({
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB max
   },
-  fileFilter: imageFilter,
+  fileFilter: imageFilter as any,
 });
 
 // Multer instance for post image uploads
@@ -109,7 +109,7 @@ export const uploadPostImage = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB max
   },
-  fileFilter: imageFilter,
+  fileFilter: imageFilter as any,
 });
 
 // Validate that a path is within the allowed directory (prevents path traversal)

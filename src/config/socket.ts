@@ -105,7 +105,7 @@ export const getOnlineUsersCount = (): number => {
 // Notification payload type
 export interface NotificationPayload {
   id: string;
-  type: 'info' | 'warning' | 'success' | 'error';
+  type: 'info' | 'warning' | 'success' | 'error' | 'comment' | 'like';
   title: string;
   message: string;
   createdAt: Date;

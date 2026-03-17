@@ -212,7 +212,10 @@ export const getPostOwnerId = async (req: Request): Promise<string | null> => {
   const postId = req.params.id;
   if (!postId) return null;
   
-  const post = await db.post.findById(postId);
+  const id = typeof postId === 'string' ? postId : (Array.isArray(postId) ? postId[0] : null);
+  if (!id) return null;
+  
+  const post = await db.post.findById(id);
   return post?.authorId || null;
 };
 
@@ -220,5 +223,6 @@ export const getPostOwnerId = async (req: Request): Promise<string | null> => {
  * Check ownership helper - for users
  */
 export const getUserId = async (req: Request): Promise<string | null> => {
-  return req.params.id || null;
+  const id = req.params.id;
+  return typeof id === 'string' ? id : (Array.isArray(id) ? id[0] : null);
 };

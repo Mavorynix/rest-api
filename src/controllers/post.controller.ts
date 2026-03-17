@@ -129,7 +129,7 @@ export const getPost = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     const post = await db.post.findById(id);
     
@@ -246,7 +246,7 @@ export const updatePost = async (
       throw forbidden('Unauthorized');
     }
     
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { title, content, image } = req.body;
     
     // Check if post exists
@@ -305,7 +305,7 @@ export const deletePost = async (
       throw forbidden('Unauthorized');
     }
     
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     // Check if post exists
     const existingPost = await db.post.findById(id);

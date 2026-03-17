@@ -21,8 +21,8 @@ const router = Router();
  */
 
 // All routes require authentication
-router.post('/avatar', authenticate, uploadAvatarHandler);
-router.post('/post-image', authenticate, uploadPostImageHandler);
+router.post('/avatar', authenticate, ...uploadAvatarHandler);
+router.post('/post-image', authenticate, ...uploadPostImageHandler);
 router.delete('/avatar', authenticate, deleteAvatarHandler);
 
 export default router;
