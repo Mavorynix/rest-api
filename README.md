@@ -12,12 +12,16 @@ A comprehensive REST API built with Node.js, Express, and TypeScript. Features a
 ## ✨ Features
 
 - 🔐 **JWT Authentication** - Access & Refresh tokens
+- 🔑 **Password Management** - Change password with current password verification
 - ✉️ **Email Verification** - Verify email on registration
 - 📁 **File Upload** - Avatar & post image uploads
 - 🔔 **Real-time Notifications** - WebSocket via Socket.io
 - 👤 **Role-Based Access Control** - Admin & User roles
 - 💬 **Comments** - Nested comments with replies
 - ❤️ **Likes** - Like/unlike posts and comments
+- 🏷️ **Tags** - Tag posts and filter by tags
+- 📊 **Activity Feed** - Posts from followed users, likes, comments
+- 📈 **Analytics** - Dashboard stats, post analytics, user analytics (admin)
 - 🔍 **Search** - Search posts and users
 - 📚 **Swagger Documentation** - Interactive API docs at `/api-docs`
 - 🛡️ **Security** - Rate limiting, Helmet, CORS
@@ -90,6 +94,7 @@ docker-compose up api
 | POST | `/api/auth/logout` | Logout user | ✅ |
 | GET | `/api/auth/me` | Get current user | ✅ |
 | PUT | `/api/auth/me` | Update profile | ✅ |
+| PUT | `/api/auth/change-password` | Change password | ✅ |
 | DELETE | `/api/auth/me` | Delete account | ✅ |
 
 ### Posts
@@ -144,6 +149,31 @@ docker-compose up api
 | GET | `/api/users/:id` | Get user by ID | ✅ |
 | PUT | `/api/users/:id` | Update user | ✅ Owner/Admin |
 | DELETE | `/api/users/:id` | Delete user | ✅ Owner/Admin |
+
+### Tags
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/tags` | Get all tags | ❌ |
+| GET | `/api/tags/:id` | Get tag by ID | ❌ |
+| GET | `/api/tags/name/:tagName` | Get posts by tag name | ❌ |
+| POST | `/api/tags` | Create tag | ✅ Admin |
+| PUT | `/api/tags/:id` | Update tag | ✅ Admin |
+| DELETE | `/api/tags/:id` | Delete tag | ✅ Admin |
+
+### Activity
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/activity/feed` | Get activity feed | ✅ |
+| GET | `/api/activity/trending` | Get trending posts | ❌ |
+| GET | `/api/activity/recent` | Get recent activity | ✅ |
+
+### Analytics (Admin Only)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/analytics/overview` | Dashboard stats | ✅ Admin |
+| GET | `/api/analytics/posts` | Post analytics | ✅ Admin |
+| GET | `/api/analytics/users` | User analytics | ✅ Admin |
+| GET | `/api/analytics/tags` | Tag analytics | ✅ Admin |
 
 ## 🔌 WebSocket Events
 
@@ -321,8 +351,19 @@ For development, you can use [Ethereal Email](https://ethereal.email) to test em
 - ✅ Input validation with Zod
 - ✅ Role-based access control
 
-## 🆕 What's New in v4.0.0
+## 🆕 What's New in v5.0.0
 
+- 🔑 **Password Change Endpoint** - Change password with current password verification
+- 🏷️ **Tags System** - Full CRUD for tags with post-tag relationships
+- 📊 **Activity Feed** - Personalized feed from followed users, trending posts
+- 📈 **Analytics Dashboard** - Admin analytics for users, posts, and tags
+- 👥 **Follow System** - Follow/unfollow users (backend support)
+- 📁 **Enhanced Models** - New Tag, PostTag, Activity, and Follow models
+- 🔧 **Improved Architecture** - Better separation of concerns with new controllers
+
+## 📋 Version History
+
+### v4.0.0
 - 💬 **Comments System** - Full CRUD with nested replies
 - ❤️ **Likes System** - Like/unlike posts and comments
 - 🔍 **Search** - Search posts by title/content, users by username/email

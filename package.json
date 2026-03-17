@@ -1,6 +1,6 @@
 {
   "name": "rest-api",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "REST API with Node.js, Express, TypeScript - JWT Auth, CRUD, Testing, Swagger, RBAC, Rate Limiting, File Upload, Email Verification, WebSocket, Comments, Likes",
   "main": "dist/index.js",
   "scripts": {
