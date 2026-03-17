@@ -92,6 +92,55 @@ export const authenticate = async (
 };
 
 /**
+ * Optional auth middleware - extracts user if token present, but doesn't require it
+ */
+export const optionalAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      next();
+      return;
+    }
+    
+    const token = authHeader.split(' ')[1];
+    
+    if (!process.env.JWT_SECRET) {
+      next();
+      return;
+    }
+    
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as {
+        id: string;
+        email: string;
+      };
+      
+      const user = await db.user.findById(decoded.id);
+      
+      if (user) {
+        req.user = {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          role: user.role,
+        };
+      }
+    } catch {
+      // Token invalid or expired, continue without user
+    }
+    
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Authorize middleware - checks user roles
  * @param roles - Allowed roles for the route
  */
