@@ -5,7 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../models/db';
-import { unauthorized, notFound } from '../middleware/error.middleware';
+import { unauthorized } from '../middleware/error.middleware';
 import { sendNotificationToUser, broadcastNotification, NotificationPayload } from '../config/socket';
 
 /**
@@ -100,7 +100,7 @@ export const markAsRead = async (
       throw unauthorized('Unauthorized');
     }
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const success = await db.notification.markAsRead(id);
     if (!success) {
@@ -180,7 +180,7 @@ export const deleteNotification = async (
       throw unauthorized('Unauthorized');
     }
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const success = await db.notification.delete(id);
     if (!success) {
@@ -246,7 +246,7 @@ export const sendTestNotification = async (
     // Send real-time notification
     const payload: NotificationPayload = {
       id: notification.id,
-      type: notification.type,
+      type: notification.type as 'info' | 'warning' | 'success' | 'error',
       title: notification.title,
       message: notification.message,
       createdAt: notification.createdAt,

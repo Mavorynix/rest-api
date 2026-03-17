@@ -90,7 +90,7 @@ export const getTag = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const tag = await db.tag.findById(id);
 
@@ -217,7 +217,7 @@ export const updateTag = async (
       throw forbidden('Only admins can update tags');
     }
 
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { name, description } = req.body;
 
     const tag = await db.tag.update(id, { name, description });
@@ -271,7 +271,7 @@ export const deleteTag = async (
       throw forbidden('Only admins can delete tags');
     }
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const deleted = await db.tag.delete(id);
 
@@ -322,7 +322,7 @@ export const getPostsByTag = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { tagName } = req.params;
+    const tagName = req.params.tagName as string;
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
 

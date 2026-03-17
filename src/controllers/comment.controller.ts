@@ -46,7 +46,7 @@ export const getComments = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { postId } = req.params;
+    const postId = req.params.postId as string;
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const parentId = req.query.parentId as string | undefined;
@@ -103,7 +103,7 @@ export const getComment = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     const comment = await db.comment.findById(id);
     
@@ -161,7 +161,7 @@ export const createComment = async (
       throw forbidden('Unauthorized');
     }
     
-    const { postId } = req.params;
+    const postId = req.params.postId as string;
     const { content, parentId } = req.body;
     
     // Check if post exists
@@ -244,7 +244,7 @@ export const updateComment = async (
       throw forbidden('Unauthorized');
     }
     
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { content } = req.body;
     
     const comment = await db.comment.findById(id);
@@ -297,7 +297,7 @@ export const deleteComment = async (
       throw forbidden('Unauthorized');
     }
     
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     const comment = await db.comment.findById(id);
     
@@ -343,7 +343,7 @@ export const getReplies = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
     

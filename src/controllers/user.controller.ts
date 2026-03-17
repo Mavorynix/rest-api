@@ -118,7 +118,7 @@ export const getUser = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     const user = await db.user.findById(id);
     
@@ -184,7 +184,7 @@ export const updateUser = async (
       throw forbidden('Unauthorized');
     }
     
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { username, email, role } = req.body;
     
     // Check if user exists
@@ -256,7 +256,7 @@ export const deleteUser = async (
       throw forbidden('Unauthorized');
     }
     
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     // Check if user exists
     const existingUser = await db.user.findById(id);

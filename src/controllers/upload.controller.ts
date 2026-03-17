@@ -3,7 +3,7 @@
  * Handles file upload endpoints with security measures
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { db } from '../models/db';
 import { uploadAvatar, uploadPostImage, getFileUrl, deleteFile } from '../config/upload';
 import { badRequest, unauthorized } from '../middleware/error.middleware';
@@ -55,8 +55,8 @@ interface MulterRequest extends Request {
  *       401:
  *         description: Unauthorized
  */
-export const uploadAvatarHandler = [
-  uploadAvatar.single('avatar'),
+export const uploadAvatarHandler: RequestHandler[] = [
+  uploadAvatar.single('avatar') as unknown as RequestHandler,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) {
@@ -146,8 +146,8 @@ export const uploadAvatarHandler = [
  *       401:
  *         description: Unauthorized
  */
-export const uploadPostImageHandler = [
-  uploadPostImage.single('image'),
+export const uploadPostImageHandler: RequestHandler[] = [
+  uploadPostImage.single('image') as unknown as RequestHandler,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) {

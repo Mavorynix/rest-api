@@ -38,7 +38,7 @@ export const likePost = async (
       throw forbidden('Unauthorized');
     }
     
-    const { postId } = req.params;
+    const postId = req.params.postId as string;
     
     // Check if post exists
     const post = await db.post.findById(postId);
@@ -111,7 +111,7 @@ export const unlikePost = async (
       throw forbidden('Unauthorized');
     }
     
-    const { postId } = req.params;
+    const postId = req.params.postId as string;
     
     // Check if post exists
     const post = await db.post.findById(postId);
@@ -161,7 +161,7 @@ export const getPostLikes = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { postId } = req.params;
+    const postId = req.params.postId as string;
     
     // Check if post exists
     const post = await db.post.findById(postId);
@@ -226,7 +226,7 @@ export const likeComment = async (
       throw forbidden('Unauthorized');
     }
     
-    const { commentId } = req.params;
+    const commentId = req.params.commentId as string;
     
     // Check if comment exists
     const comment = await db.comment.findById(commentId);
@@ -299,7 +299,7 @@ export const unlikeComment = async (
       throw forbidden('Unauthorized');
     }
     
-    const { commentId } = req.params;
+    const commentId = req.params.commentId as string;
     
     // Check if comment exists
     const comment = await db.comment.findById(commentId);
@@ -351,7 +351,7 @@ export const getPostLikeStatus = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { postId } = req.params;
+    const postId = req.params.postId as string;
     const userId = req.user?.id;
     
     // Check if post exists
