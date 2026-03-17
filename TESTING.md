@@ -416,6 +416,4 @@ bun run test
 bun run test:coverage
 ```
 
----
 
-Made with 💜 by **Mavorynix**
