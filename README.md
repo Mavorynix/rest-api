@@ -351,27 +351,6 @@ For development, you can use [Ethereal Email](https://ethereal.email) to test em
 - ✅ Input validation with Zod
 - ✅ Role-based access control
 
-## 🆕 What's New in v5.0.0
-
-- 🔑 **Password Change Endpoint** - Change password with current password verification
-- 🏷️ **Tags System** - Full CRUD for tags with post-tag relationships
-- 📊 **Activity Feed** - Personalized feed from followed users, trending posts
-- 📈 **Analytics Dashboard** - Admin analytics for users, posts, and tags
-- 👥 **Follow System** - Follow/unfollow users (backend support)
-- 📁 **Enhanced Models** - New Tag, PostTag, Activity, and Follow models
-- 🔧 **Improved Architecture** - Better separation of concerns with new controllers
-
-## 📋 Version History
-
-### v4.0.0
-- 💬 **Comments System** - Full CRUD with nested replies
-- ❤️ **Likes System** - Like/unlike posts and comments
-- 🔍 **Search** - Search posts by title/content, users by username/email
-- 🐛 **Bug Fix** - Password reset now properly updates password instead of recreating user
-- 📝 **Request Logging** - Morgan middleware for HTTP request logging
-- 📊 **Counters** - Posts now track likes and comments count
-- 🔔 **Enhanced Notifications** - Notifications for likes and comments
-
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file.
