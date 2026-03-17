@@ -1,11 +1,11 @@
 # 🚀 REST API
 
-A comprehensive REST API built with Node.js, Express, and TypeScript. Features authentication, RBAC, rate limiting, Swagger documentation, Docker support, file uploads, email verification, and real-time notifications.
+A comprehensive REST API built with Node.js, Express, and TypeScript. Features authentication, RBAC, rate limiting, Swagger documentation, Docker support, file uploads, email verification, real-time notifications, comments, and likes.
 
 ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=nodedotjs)
 ![Express](https://img.shields.io/badge/Express-4.x-black?style=flat-square&logo=express)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript)
-![Jest](https://img.shields.io/badge/Jest-30-C21325?style=flat-square&logo=jest)
+![Jest](https://img.shields.io/badge/Jest-29-C21325?style=flat-square&logo=jest)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)
 ![Socket.io](https://img.shields.io/badge/Socket.io-4.x-black?style=flat-square&logo=socketdotio)
 
@@ -16,18 +16,22 @@ A comprehensive REST API built with Node.js, Express, and TypeScript. Features a
 - 📁 **File Upload** - Avatar & post image uploads
 - 🔔 **Real-time Notifications** - WebSocket via Socket.io
 - 👤 **Role-Based Access Control** - Admin & User roles
+- 💬 **Comments** - Nested comments with replies
+- ❤️ **Likes** - Like/unlike posts and comments
+- 🔍 **Search** - Search posts and users
 - 📚 **Swagger Documentation** - Interactive API docs at `/api-docs`
 - 🛡️ **Security** - Rate limiting, Helmet, CORS
 - 📄 **Pagination** - Sort, filter, paginate endpoints
 - 🧪 **Testing** - Unit & Integration tests with Jest
 - 🐳 **Docker** - Production-ready containerization
 - 🔥 **Hot Reload** - Development with auto-restart
+- 📝 **Request Logging** - Morgan HTTP request logging
 
 ## 🛠️ Tech Stack
 
 | Category | Technology |
 |----------|------------|
-| Runtime | Node.js 18+ |
+| Runtime | Node.js 18+ / Bun |
 | Framework | Express.js |
 | Language | TypeScript |
 | Auth | JWT (Access + Refresh tokens) |
@@ -35,6 +39,7 @@ A comprehensive REST API built with Node.js, Express, and TypeScript. Features a
 | File Upload | Multer |
 | Email | Nodemailer |
 | Real-time | Socket.io |
+| Logging | Morgan + Winston |
 | Testing | Jest + Supertest |
 | Docs | Swagger/OpenAPI |
 | Container | Docker |
@@ -44,7 +49,7 @@ A comprehensive REST API built with Node.js, Express, and TypeScript. Features a
 ### Using Bun (Recommended)
 ```bash
 # Clone
-git clone https://github.com/Mavorynix/rest-api.git
+git clone https://github.com/manggaladev/rest-api.git
 cd rest-api
 
 # Install
@@ -87,6 +92,36 @@ docker-compose up api
 | PUT | `/api/auth/me` | Update profile | ✅ |
 | DELETE | `/api/auth/me` | Delete account | ✅ |
 
+### Posts
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/posts` | Get all posts (with search) | ❌ |
+| GET | `/api/posts/user/me` | Get my posts | ✅ |
+| GET | `/api/posts/:id` | Get single post | ❌ |
+| POST | `/api/posts` | Create post | ✅ |
+| PUT | `/api/posts/:id` | Update post | ✅ Owner/Admin |
+| DELETE | `/api/posts/:id` | Delete post | ✅ Owner/Admin |
+
+### Comments
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/posts/:postId/comments` | Get post comments | ❌ |
+| GET | `/api/comments/:id` | Get single comment | ❌ |
+| GET | `/api/comments/:id/replies` | Get comment replies | ❌ |
+| POST | `/api/posts/:postId/comments` | Create comment | ✅ |
+| PUT | `/api/comments/:id` | Update comment | ✅ Owner |
+| DELETE | `/api/comments/:id` | Delete comment | ✅ Owner/Admin |
+
+### Likes
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/posts/:postId/likes` | Get post likes | ❌ |
+| GET | `/api/posts/:postId/like/status` | Check like status | Optional |
+| POST | `/api/posts/:postId/like` | Like a post | ✅ |
+| DELETE | `/api/posts/:postId/like` | Unlike a post | ✅ |
+| POST | `/api/comments/:commentId/like` | Like a comment | ✅ |
+| DELETE | `/api/comments/:commentId/like` | Unlike a comment | ✅ |
+
 ### Upload
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
@@ -101,25 +136,14 @@ docker-compose up api
 | PUT | `/api/notifications/read-all` | Mark all as read | ✅ |
 | PUT | `/api/notifications/:id/read` | Mark as read | ✅ |
 | DELETE | `/api/notifications/:id` | Delete notification | ✅ |
-| POST | `/api/notifications/test` | Send test notification | ✅ |
 
 ### Users (Admin Only)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/users` | Get all users | ✅ Admin |
+| GET | `/api/users` | Get all users (with search) | ✅ Admin |
 | GET | `/api/users/:id` | Get user by ID | ✅ |
 | PUT | `/api/users/:id` | Update user | ✅ Owner/Admin |
 | DELETE | `/api/users/:id` | Delete user | ✅ Owner/Admin |
-
-### Posts
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/posts` | Get all posts | ❌ |
-| GET | `/api/posts/user/me` | Get my posts | ✅ |
-| GET | `/api/posts/:id` | Get single post | ❌ |
-| POST | `/api/posts` | Create post | ✅ |
-| PUT | `/api/posts/:id` | Update post | ✅ Owner/Admin |
-| DELETE | `/api/posts/:id` | Delete post | ✅ Owner/Admin |
 
 ## 🔌 WebSocket Events
 
@@ -154,6 +178,12 @@ GET /api/posts?page=2&limit=10
 ```
 GET /api/posts?sort=createdAt&order=desc
 GET /api/users?sort=username&order=asc
+```
+
+### Search
+```
+GET /api/posts?search=keyword
+GET /api/users?search=john
 ```
 
 ### Filtering
@@ -198,7 +228,7 @@ NODE_ENV=development
 JWT_SECRET=your-secret-key-here
 
 # CORS (comma-separated)
-CORS_ORIGIN=http://localhost:3000,http://localhost:5173
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 
 # Base URL for email links
 BASE_URL=http://localhost:3000
@@ -211,20 +241,6 @@ SMTP_USER=your-smtp-user
 SMTP_PASS=your-smtp-password
 EMAIL_FROM=noreply@example.com
 EMAIL_FROM_NAME=REST API
-```
-
-## 🐳 Docker Commands
-
-```bash
-# Build image
-docker build -t rest-api .
-
-# Run container
-docker run -p 3000:3000 rest-api
-
-# Using docker-compose
-docker-compose up -d api        # Production
-docker-compose up api-dev       # Development
 ```
 
 ## 📁 Project Structure
@@ -241,8 +257,16 @@ rest-api/
 │   │   ├── email.ts         # Nodemailer config
 │   │   └── socket.ts        # Socket.io config
 │   ├── controllers/         # Request handlers
+│   │   ├── auth.controller.ts
+│   │   ├── post.controller.ts
+│   │   ├── comment.controller.ts
+│   │   ├── like.controller.ts
+│   │   └── ...
 │   ├── middleware/          # Express middleware
-│   ├── models/              # Data models
+│   │   ├── auth.middleware.ts
+│   │   ├── error.middleware.ts
+│   │   └── validate.middleware.ts
+│   ├── models/              # Data models (db.ts)
 │   ├── routes/              # API routes
 │   ├── utils/               # Utility functions
 │   ├── validation/          # Zod schemas
@@ -263,8 +287,8 @@ rest-api/
 
 | Role | Permissions |
 |------|-------------|
-| **admin** | All operations, manage all users & posts |
-| **user** | Manage own profile & posts only |
+| **admin** | All operations, manage all users, posts & comments |
+| **user** | Manage own profile, posts & comments only |
 
 ## 📝 Scripts
 
@@ -296,3 +320,21 @@ For development, you can use [Ethereal Email](https://ethereal.email) to test em
 - ✅ Helmet security headers
 - ✅ Input validation with Zod
 - ✅ Role-based access control
+
+## 🆕 What's New in v4.0.0
+
+- 💬 **Comments System** - Full CRUD with nested replies
+- ❤️ **Likes System** - Like/unlike posts and comments
+- 🔍 **Search** - Search posts by title/content, users by username/email
+- 🐛 **Bug Fix** - Password reset now properly updates password instead of recreating user
+- 📝 **Request Logging** - Morgan middleware for HTTP request logging
+- 📊 **Counters** - Posts now track likes and comments count
+- 🔔 **Enhanced Notifications** - Notifications for likes and comments
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file.
+
+---
+
+Made with ❤️ by [manggaladev](https://github.com/manggaladev)

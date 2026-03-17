@@ -361,16 +361,8 @@ export const resetPassword = async (
       throw badRequest('User not found');
     }
     
-    // Update password (will be hashed in the update method)
-    // We need to create a new user with new password since update doesn't support password
-    // For now, we'll delete and recreate (in a real app, you'd have a proper update method)
-    await db.user.delete(user.id);
-    await db.user.create({
-      email: user.email,
-      username: user.username,
-      password: password,
-      role: user.role,
-    });
+    // Update password using the proper method
+    await db.user.updatePassword(user.id, password);
     
     // Delete the reset token
     await db.verificationToken.delete(token);
