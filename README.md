@@ -335,6 +335,3 @@ For development, you can use [Ethereal Email](https://ethereal.email) to test em
 
 MIT License - see [LICENSE](LICENSE) file.
 
----
-
-Made with ❤️ by [manggaladev](https://github.com/manggaladev)
