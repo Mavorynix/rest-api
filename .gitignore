@@ -37,3 +37,4 @@ docker-compose.override.yml
 # Misc
 *.bak
 *.tmp
+package-lock.json
