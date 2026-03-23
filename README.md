@@ -129,7 +129,3 @@ rest-api/
 
 [MIT License](LICENSE)
 
-## 🔗 Links
-
-- [GitHub Repository](https://github.com/manggaladev/rest-api)
-- [Issues](https://github.com/manggaladev/rest-api/issues)
