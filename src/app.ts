@@ -59,7 +59,6 @@ app.use('/uploads', express.static(uploadsPath, {
 app.use('/api/', apiLimiter);
 
 // API Documentation
-// @ts-expect-error - swagger-ui-express type mismatch with express 5 types
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'REST API Documentation',
