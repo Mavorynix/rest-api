@@ -1,41 +1,26 @@
 # Security Policy
 
+## Supported Versions
+
+| Version | Supported          |
+| ------- | ------------------ |
+| Latest  | :white_check_mark: |
+
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability, please report it by emailing the maintainer directly. Do not open a public issue.
+If you discover a security vulnerability, please:
 
-### What to include:
-- Description of the vulnerability
-- Steps to reproduce
-- Possible impact
-- Suggested fix (if any)
+1. Do NOT open a public issue
+2. Email the maintainer directly
+3. Include detailed description
+4. Provide steps to reproduce
+5. Allow time for response before disclosure
 
-## Security Features
-
-This project includes:
-
-- ✅ **JWT Authentication** - Secure token-based auth
-- ✅ **Rate Limiting** - Prevents brute force attacks
-- ✅ **Helmet** - HTTP security headers
-- ✅ **CORS** - Cross-origin protection
-- ✅ **Input Validation** - Zod schema validation
-- ✅ **Role-Based Access Control** - Admin/User permissions
-- ✅ **Refresh Tokens** - Secure session management
+We take security seriously and will respond promptly to valid reports.
 
 ## Best Practices
 
-When using this API:
-
-1. **Never commit secrets** - Use environment variables
-2. **Use HTTPS** in production
-3. **Rotate JWT secrets** regularly
-4. **Keep dependencies updated**
-5. **Enable all GitHub security features**
-
-## Dependencies
-
-We use Dependabot to keep dependencies updated automatically.
-
----
-
-**Last updated:** March 2026
+- Keep dependencies up to date
+- Use strong passwords
+- Enable 2FA on your accounts
+- Review code before merging
