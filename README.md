@@ -1,89 +1,99 @@
+<div align="center">
+
 # 🚀 REST API
 
-[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=nodedotjs)](https://nodejs.org)
-[![Express](https://img.shields.io/badge/Express-4.x-black?style=flat-square&logo=express)](https://expressjs.com)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript)](https://typescriptlang.org)
-[![Jest](https://img.shields.io/badge/Jest-29-C21325?style=flat-square&logo=jest)](https://jestjs.io)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+**A production-ready REST API template with authentication, RBAC, real-time notifications, file uploads, testing, and more**
 
-A comprehensive REST API built with Node.js, Express, and TypeScript. Features authentication, RBAC, rate limiting, Swagger documentation, Docker support, file uploads, email verification, real-time notifications, comments, and likes.
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![Jest](https://img.shields.io/badge/Jest-29-C21325?style=for-the-badge&logo=jest&logoColor=white)](https://jestjs.io)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-## ✨ Features
+</div>
 
-### Authentication & Authorization
-- 🔐 **JWT Authentication** - Access & Refresh tokens
-- 🔑 **Password Management** - Change password with verification
-- ✉️ **Email Verification** - Verify email on registration
-- 👤 **Role-Based Access Control** - Admin & User roles
+---
 
-### Core Features
-- 📁 **File Upload** - Avatar & post image uploads
-- 🔔 **Real-time Notifications** - WebSocket via Socket.io
-- 💬 **Comments** - Nested comments with replies
-- ❤️ **Likes** - Like/unlike posts and comments
-- 📝 **Posts** - CRUD with pagination
+## ✨ What's Included
 
-### Technical Features
-- 🛡️ **Security** - Helmet, CORS, Rate limiting
-- 📖 **Swagger Documentation** - Auto-generated API docs
-- 🧪 **Testing** - Jest with unit & integration tests
-- 🐳 **Docker** - Dockerfile & docker-compose
+### 🔐 Authentication
+| Feature | Description |
+|---------|-------------|
+| JWT Tokens | Access & Refresh tokens |
+| Email Verification | Verify email on signup |
+| Password Reset | Change password flow |
+| RBAC | Admin & User roles |
 
-## 🛠️ Tech Stack
+### 📦 Core Features
+| Feature | Description |
+|---------|-------------|
+| Posts | CRUD with pagination |
+| Comments | Nested comments |
+| Likes | Like posts & comments |
+| File Upload | Avatar & images |
+| Tags | Categorize content |
 
-- **Runtime**: Node.js 18+
-- **Framework**: Express 4.x
-- **Language**: TypeScript
-- **Database**: In-memory (default) / PostgreSQL
-- **Auth**: JWT (jsonwebtoken)
-- **Validation**: Zod
-- **Testing**: Jest
-- **Real-time**: Socket.io
+### 🔧 Technical
+| Feature | Description |
+|---------|-------------|
+| Rate Limiting | Prevent abuse |
+| Swagger Docs | Auto-generated API docs |
+| WebSocket | Real-time notifications |
+| Docker | Container ready |
+| Testing | Unit & Integration tests |
 
-## 📦 Installation
-
-### Local Development
+## 🚀 Quick Start
 
 ```bash
-# Clone the repository
+# Clone
 git clone https://github.com/manggaladev/rest-api.git
 cd rest-api
 
-# Install dependencies
+# Install
 bun install
 
-# Copy environment file
-cp .env.example .env
-
-# Start development server
+# Run
 bun run dev
 ```
 
-### Docker
+Server runs at `http://localhost:3000`
 
-```bash
-docker-compose up -d
+## 📖 API Endpoints
+
+### Auth
+```
+POST /api/auth/register     # Register
+POST /api/auth/login        # Login
+POST /api/auth/refresh      # Refresh token
+POST /api/auth/logout       # Logout
 ```
 
-## 🚀 Usage
+### Users
+```
+GET  /api/users/me          # Current user
+PUT  /api/users/me          # Update profile
+POST /api/users/me/avatar   # Upload avatar
+```
 
-### API Endpoints
+### Posts
+```
+GET    /api/posts           # List posts
+POST   /api/posts           # Create post
+GET    /api/posts/:id       # Get post
+PUT    /api/posts/:id       # Update post
+DELETE /api/posts/:id       # Delete post
+```
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login user |
-| POST | `/api/auth/refresh` | Refresh token |
-| GET | `/api/users/me` | Get current user |
-| GET | `/api/posts` | List posts |
-| POST | `/api/posts` | Create post |
-| GET | `/api/posts/:id` | Get post |
-| POST | `/api/posts/:id/comments` | Add comment |
-| POST | `/api/posts/:id/like` | Like post |
+### Interactions
+```
+POST /api/posts/:id/like           # Like post
+POST /api/posts/:id/comments      # Add comment
+POST /api/comments/:id/like       # Like comment
+```
 
-### API Documentation
+## 📚 Documentation
 
-Swagger UI available at `/api/docs` when running the server.
+Swagger UI available at `/api-docs`
 
 ## 🧪 Testing
 
@@ -91,41 +101,62 @@ Swagger UI available at `/api/docs` when running the server.
 # Run all tests
 bun run test
 
-# Run with coverage
+# Watch mode
+bun run test:watch
+
+# Coverage
 bun run test:coverage
-
-# Run unit tests only
-bun run test:unit
-
-# Run integration tests only
-bun run test:integration
 ```
 
-## 📁 Project Structure
+## 🐳 Docker
+
+```bash
+# Build & run
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+## 🏗️ Project Structure
 
 ```
 rest-api/
 ├── src/
-│   ├── index.ts          # Entry point
-│   ├── app.ts            # Express app
 │   ├── routes/           # API routes
 │   ├── controllers/      # Request handlers
 │   ├── services/         # Business logic
-│   ├── middlewares/      # Express middlewares
-│   ├── validators/       # Zod schemas
-│   ├── types/            # TypeScript types
-│   └── utils/            # Utilities
-├── tests/
-│   ├── unit/             # Unit tests
-│   └── integration/      # Integration tests
-├── .github/              # GitHub workflows
-├── package.json
-├── tsconfig.json
-├── jest.config.js
-└── README.md
+│   ├── middlewares/      # Auth, validation
+│   ├── models/           # Data models
+│   └── __tests__/        # Tests
+├── docker-compose.yml
+├── Dockerfile
+└── package.json
 ```
+
+## 🔧 Environment
+
+```env
+PORT=3000
+NODE_ENV=development
+JWT_SECRET=your-secret-key
+CORS_ORIGIN=http://localhost:3000
+```
+
+## 🤝 Contributing
+
+Contributions welcome! Feel free to submit PRs.
 
 ## 📄 License
 
 [MIT License](LICENSE)
 
+---
+
+<div align="center">
+
+**[⬆ Back to Top](#-rest-api)**
+
+Made with ❤️ by [manggaladev](https://github.com/manggaladev)
+
+</div>
