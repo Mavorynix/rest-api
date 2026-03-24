@@ -46,7 +46,6 @@
 
 ```bash
 # Clone
-git clone https://github.com/manggaladev/rest-api.git
 cd rest-api
 
 # Install
@@ -157,6 +156,5 @@ Contributions welcome! Feel free to submit PRs.
 
 **[⬆ Back to Top](#-rest-api)**
 
-Made with ❤️ by [manggaladev](https://github.com/manggaladev)
 
 </div>
