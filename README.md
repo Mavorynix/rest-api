@@ -55,7 +55,7 @@ bun install
 bun run dev
 ```
 
-Server runs at `http://localhost:3000`
+Server runs at `https://api.example.com`
 
 ## 📖 API Endpoints
 
@@ -139,7 +139,7 @@ rest-api/
 PORT=3000
 NODE_ENV=development
 JWT_SECRET=your-secret-key
-CORS_ORIGIN=http://localhost:3000
+CORS_ORIGIN=https://api.example.com
 ```
 
 ## 🤝 Contributing
